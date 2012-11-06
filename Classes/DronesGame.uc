@@ -6,31 +6,61 @@ class DronesGame extends SimpleGame;
 /** Holds an array of my brick actors
  *	Set in the function PostBeginPlay 
  *  Used in the function PostBeginPlay */
-var array<DronesBrickKActor> AvailableBricks;
-var array<DronesBrickKActor> UnavailableBricks;
+var array<DronesBrickKActor> Bricks;
+var array<DronesDrone> Drones;
 
 var float OverallDroneSpeed;
 var float CurrentDroneSpeed;
-
-var int NumDrones;
 
 //==========================EVENTS==========================================
 /** Inherited from parent class */
 event PostBeginPlay()
 {
-	local DronesBrickKActor NewBrick;
+	local DronesBrickKActor NewBrick, Brick;
+	local DronesDrone NewDrone;
 	local int i;
 	local rotator r;
 	local vector v;
+
 			
 	// invoke the PostBeginPlay method of the parent class
 	super.PostBeginPlay();
 
-	// spawn bricks
-	for( i=0; i<5000; i++)
+	/*
+	r.Pitch = 0;
+	r.Yaw = 0;
+	r.Roll = 0;
+	
+	v.X = 0;
+	v.Y = 0;
+	v.Z = 20;
+	NewBrick = Spawn(class'DronesBrickKActor',,,v,r,,);
+	NewBrick.SetPhysics(PHYS_rigidbody);
+	Bricks.AddItem(NewBrick);
+	
+	v.X = 40;
+	v.Y = 0;
+	v.Z = 20;
+	NewBrick = Spawn(class'DronesBrickKActor',,,v,r,,);
+	NewBrick.SetPhysics(PHYS_rigidbody);
+	Bricks.AddItem(NewBrick);
+	
+	foreach Bricks(Brick)
 	{
-		v.X = RandRange(-4500,2000);
-		v.Y = RandRange(-3000, 7000);
+		`Log("Brick: "$Brick$" Location: "$Brick.Location);
+	}
+	foreach Bricks(Brick)
+	{
+		IsBrickSizedLocationOccupied(Brick.Location, Brick.Rotation);
+	}
+	*/
+	
+
+	// spawn bricks
+	for( i=0; i<1000; i++)
+	{
+		v.X = RandRange(-2500, 2500);
+		v.Y = RandRange(-2500, 2500);
 		v.Z = RandRange(50, 500);
 		r.Pitch = 0;
 		r.Yaw = 0;
@@ -39,34 +69,33 @@ event PostBeginPlay()
 		NewBrick = Spawn(class'DronesBrickKActor',,,v,r,,);
 		NewBrick.SetPhysics(PHYS_rigidbody);
 			
-		AvailableBricks.AddItem(NewBrick);
+		Bricks.AddItem(NewBrick);
 	}
-	
-	/*
-	v.X = 1000;
-	v.Y = 3000;
-	v.Z = 500;
-	NewDrone = Spawn(class'DronesDrone',,,v,,,);
-	NewDrone.Controller = Spawn(class'DronesDroneAIController');
-	NewDrone.Controller.Possess(NewDrone, FALSE);
-	*/
-	
-}
 
+	// spawn drones
+	for( i=0; i<5; i++)
+	{
+		v.X = i*1000;
+		v.Y = 0;
+		v.Z = 80;
+		
+		NewDrone = Spawn(class'DronesDrone',,,v,r,,);
+		DronesDroneAIController(NewDrone.Controller).InitializeRandomBlueprint();
+		NewDRone.UpdateDroneColor();
+		
+		Drones.AddItem(NewDrone);
+	}
+
+}
 
 event Tick ( float DeltaTime )
 {
-	local DronesDrone OutActor;
 	local DronesDrone FreshDrone;
 	local vector v;
-	NumDrones = 0;
-	
-	foreach AllActors(class'DronesDrone', OutActor)
-	{
-		NumDrones++;
-	}
+
 	//`Log("number of Drones" $NumActors);
-	If (NumDrones <= 0)
+/*
+	If (Drones.Length <= 0)
 	{
 		v.X = 0;
 		v.Y = 0;
@@ -77,6 +106,7 @@ event Tick ( float DeltaTime )
 		//`Log("end of game");
 		//ConsoleCommand("open DronesLandscape01");
 	}
+*/
 }
 
 /*
@@ -86,15 +116,15 @@ event Tick ( float Deltatime)
 	local int Index;
 	`Log(" ");
 	`Log("Presort");
-	foreach AvailableBricks(ThisDronesBrickKActor, Index)
+	foreach Bricks(ThisDronesBrickKActor, Index)
 	{
 		`Log("ThisDronesBrickKActor: "$ThisDronesBrickKActor$" at index: "$Index$" at location: "$ThisDronesBrickKActor.Location.X);
 	}
 	
-	AvailableBricks.Sort(SortBricks);
+	Bricks.Sort(SortBricksRandomly);
 	
 	`Log("Postsort");
-	foreach AvailableBricks(ThisDronesBrickKActor, Index)
+	foreach Bricks(ThisDronesBrickKActor, Index)
 	{
 		`Log("ThisDronesBrickKActor: "$ThisDronesBrickKActor$" at index: "$Index$" at location: "$ThisDronesBrickKActor.Location.X);
 	}
@@ -114,17 +144,19 @@ delegate int SortBricks(DronesBrickKActor BrickA, DronesBrickKActor BrickB)
 	}
 }
 
-delegate int SortBricksRandomly(DronesBrickKActor BrickA, DronesBrickKActor BrickB)
+/*
+function SortBricksRandomly(DronesBrickKActor BrickA, DronesBrickKActor BrickB)
 {
-	if(RandRange(0,1) < 0.5)
-	{
-		return -1;
-	}
-	else
-	{
-		return 1;
-	}
+while(Bricks.length > 0)
+{
+    i = Rand(Bricks.length);
+    SortedBricks[SortedBricks.length] = Bricks[i];
+    Bricks.Remove(i,1);
 }
+
+// SortedBricks should now be a randomized Bricks
+}
+*/
 
 function Actor GetStaticMeshActorInstanceByTag(name actorTag)
 {
@@ -160,7 +192,7 @@ static event class<GameInfo> SetGameType(string MapName, string Options, string 
 //==========================DEFAULT PROPERTIES==========================================
 defaultproperties
 {
-	OverallDroneSpeed = 10
+	OverallDroneSpeed = 15
 
 	//MapPrefixes[1]='Tube_stairs_map_map'
 	HUDType=class'Drones.DronesHUDWrapper'

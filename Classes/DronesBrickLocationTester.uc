@@ -29,11 +29,12 @@ function bool DoesBrickOverlap()
 	}
 		
 	traceExtent.X = 19.9;
-	traceExtent.Y = 19.9;
+	traceExtent.Y = 0;
 	traceExtent.Z = 19.9;
 	
 	traceHit = Trace(hitLoc, hitNorm, endTraceLoc, startTraceLoc, ,traceExtent, ,);
-	//`Log("DronesBrickLocation tester here.  I ran a trace hit through my volume, and here's the result: "$traceHit);
+	`Log("DronesBrickLocation tester here.  I am at Location: "$Location$" and Rotation: "$Rotation$" and I ran a trace hit through my volume, and here's the result: "$traceHit$" which is at location: "$traceHit.Location);
+	`Log("startTraceLoc: "$startTraceLoc$" and endTraceLoc: "$endTraceLoc);
 	
 	if(traceHit==NONE)
 	{
@@ -41,7 +42,6 @@ function bool DoesBrickOverlap()
 	}
 	else
 	{
-		//`Log("traceHit "$traceHit$" traceHit.class "$traceHit.class);
 		if(traceHit.class == class'DronesBrickKActor')
 		{
 			return TRUE;

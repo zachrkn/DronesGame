@@ -3,22 +3,32 @@ class DronesBrickKActor extends KActor
 //class DronesBrickKActor extends KAsset
     placeable;
 	
+//==========================ENUMERATORS==========================================
+enum EAvailability
+{
+	AVAIL_Available,
+	AVAIL_InTransit,
+	AVAIL_InStructure
+};	
+	
 //==========================VARIABLES==========================================
 var bool bAvailable;
 var MaterialInstanceConstant matInst;
 
 var array<DronesBrickConstraint> ConstraintsApplied;
 
+var EAvailability Availability;
+
 //==========================EVENTS==========================================
 simulated event FellOutOfWorld (class<DamageType> dmgType)
 {
-	DronesGame(WorldInfo.Game).AvailableBricks.RemoveItem(Self);
+	DronesGame(WorldInfo.Game).Bricks.RemoveItem(Self);
 	Destroy();
 }
 
 simulated event OutsideWorldBounds ()
 {
-	DronesGame(WorldInfo.Game).AvailableBricks.RemoveItem(Self);
+	DronesGame(WorldInfo.Game).Bricks.RemoveItem(Self);
 	Destroy();
 }
 
@@ -102,19 +112,6 @@ event ApplyImpulse( Vector ImpulseDir, float ImpulseMag, Vector HitLocation, opt
 }
 
 //==========================FUNCTIONS==========================================
-function MakeUnavailable()
-{
-	DronesGame(WorldInfo.Game).AvailableBricks.RemoveItem(self);
-	DronesGame(WorldInfo.Game).UnavailableBricks.AddItem(self);
-	
-}
-
-function MakeAvailable()
-{
-	DronesGame(WorldInfo.Game).AvailableBricks.AddItem(self);
-	DronesGame(WorldInfo.Game).UnavailableBricks.RemoveItem(self);
-}
-
 function ToggleHighlightOn()
 {
 	matInst.SetScalarParameterValue('Highlight',0.5);
@@ -207,13 +204,16 @@ function CreateConstraintWithAllTouchingBricks()
 		traceExtent.Y = 20.1;
 		traceExtent.Z = 20.1;
 		traceHit = Trace(hitLoc, hitNorm, endTraceLoc, startTraceLoc, ,traceExtent, ,);
-	
+		
+		// TRACEACTORS
+		//`Log("Checking to see if any bricks are touching");
 		if(traceHit!=NONE)
 		{
 			if(traceHit.class == class'DronesBrickKActor')
 			{
 				if( (traceHit != Self) )
 				{
+					//`Log("Creating constraint!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 					CreateConstraintWithBrick(DronesBrickKActor(traceHit));
 				}
 			}
@@ -237,31 +237,31 @@ DefaultProperties
 	
 	bPawnCanBaseOn=TRUE
 	bCanStepUpOn=FALSE
-	
+
 	Begin Object Name=StaticMeshComponent0
         StaticMesh=DronesPackage.Meshes.Brick_large_mesh
 
-		BlockRigidBody=TRUE
-		CollideActors=TRUE
-		BlockActors=TRUE
-		bNotifyRigidBodyCollision=TRUE
-		ScriptRigidBodyCollisionThreshold=0.0001
-		BlockZeroExtent=TRUE
-		BlockNonZeroExtent=TRUE
-		RBChannel=RBCC_Untitled2
-		RBCollideWithChannels=(Default=TRUE, GameplayPhysics=FALSE, Untitled1=FALSE, Untitled2=TRUE)
+//		BlockRigidBody=TRUE
+//		CollideActors=TRUE
+//		BlockActors=TRUE
+//		bNotifyRigidBodyCollision=TRUE
+//		ScriptRigidBodyCollisionThreshold=0.0001
+//		BlockZeroExtent=TRUE
+//		BlockNonZeroExtent=TRUE
+//		RBChannel=RBCC_Untitled2
+//		RBCollideWithChannels=(Default=TRUE, GameplayPhysics=FALSE, Untitled1=FALSE, Untitled2=TRUE)
     End Object
 
 	Begin Object Class=SkeletalMeshComponent Name=InitialSkeletalMesh
-		CastShadow=FALSE
-		bCastDynamicShadow=FALSE
-		bOwnerNoSee=FALSE
-		BlockRigidBody=FALSE
-		CollideActors=FALSE
-		BlockZeroExtent=FALSE
-		BlockNonZeroExtent=FALSE
-		BlockActors=TRUE
-		bNotifyRigidBodyCollision=FALSE
+//		CastShadow=FALSE
+//		bCastDynamicShadow=FALSE
+//		bOwnerNoSee=FALSE
+//		BlockRigidBody=FALSE
+//		CollideActors=FALSE
+//		BlockZeroExtent=FALSE
+//		BlockNonZeroExtent=FALSE
+//		BlockActors=TRUE
+//		bNotifyRigidBodyCollision=FALSE
 		HiddenEditor=TRUE
 		HiddenGame=TRUE
 		//What to change if you'd like to use your own meshes and animations

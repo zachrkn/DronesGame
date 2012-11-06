@@ -1,6 +1,5 @@
 //==========================CLASS DECLARATION==================================
-class DronesDrone extends UDKPawn
-    placeable;
+class DronesDrone extends UDKPawn;
 
 //==========================VARIABLES==========================================
 var() PointLightComponent AttachedLight;
@@ -54,18 +53,21 @@ function UpdateDroneColor()
 {
 	local SkeletalMeshComponent ThisSkeletalMeshComponent;
 	local MaterialInstanceConstant ThisMaterialInstanceConstant;
+	local DronesDroneAIController AIController;
 	//local vector AtoB, MidPoint;
 	local vector DestinationRangeCenter;
 	local LinearColor NewColor;
 	
+	AIController = DronesDroneAIController(Controller);
 	// find midpoint of targetdestinationrange
 	DestinationRangeCenter = DronesDroneAIController(Controller).DestinationRangeCenter;
 	
 	// map that range to color value so that 0,0,100 is white
-	NewColor.R = Abs(DestinationRangeCenter.X / 4000);
-	NewColor.G = Abs(DestinationRangeCenter.Y / 4000);
-	NewColor.B = Abs((DestinationRangeCenter.Z - 100) / 300);
+	NewColor.R = Abs(AIController.StructureBlueprint.StructureLocation.X / 4000);
+	NewColor.G = Abs(AIController.StructureBlueprint.StructureLocation.Y / 4000);
+	NewColor.B = Abs((AIController.StructureBlueprint.StructureLocation.Z - 100) / 300);
 	NewColor.A = 1;
+	`Log("NewColor.R "$NewColor.R$" NewColor.G "$NewColor.G$" NewColor.B "$NewColor.B);
 	
 	foreach ComponentList(class'SkeletalMeshComponent', ThisSkeletalMeshComponent)
 	{
@@ -88,30 +90,9 @@ function Feed()
 function Kill()
 {
 	local DronesDroneAIController ThisController;
-	local StaticMeshComponent ThisStaticMeshComponent;
 
+	DronesGame(WorldInfo.Game).Drones.RemoveItem(Self);
 	ThisController = DronesDroneAIController(Controller);
-
-	ThisController.PickUpBrick.SetHardAttach(FALSE);
-	ThisController.PickUpBrick.SetBase(none);
-	foreach ThisController.PickUpBrick.ComponentList(class'StaticMeshComponent', ThisStaticMeshComponent)
-	{
-		ThisStaticMeshComponent.SetRBPosition(Location);
-		ThisStaticMeshComponent.SetRBRotation(Rotation);
-		ThisStaticMeshComponent.SetTraceBlocking(TRUE, TRUE);
-	}	
-	ThisController.PickUpBrick.SetLocation(Location);
-	ThisController.PickUpBrick.SetRotation(Rotation);
-	ThisController.PickUpBrick.SetPhysics(PHYS_RigidBody);
-	
-	foreach ThisController.PickUpBrick.ComponentList(class'StaticMeshComponent', ThisStaticMeshComponent)
-	{
-		ThisStaticMeshComponent.SetRBLinearVelocity(vect(0,0,0));
-		ThisStaticMeshComponent.SetRBAngularVelocity(vect(0,0,0));
-		ThisStaticMeshComponent.SetBlockRigidBody(TRUE);
-	}
-
-	ThisController.PickUpBrick.MakeAvailable();
 	
 	ThisController.Unpossess();
 	ThisController.Destroy();
@@ -156,7 +137,7 @@ DefaultProperties
 	bCanStrafe=TRUE
 	LandMovementState=Idle
 	//bReducedSpeed=TRUE
-	
+		
 	DrawScale=.8;
 	
 	//Setting up the light environment
@@ -192,9 +173,9 @@ DefaultProperties
 	
 	
     Begin Object Name=CollisionCylinder
-	CollisionHeight=+150.000000
+	CollisionHeight=+25.000000
     End Object
-	
+
 
 	Begin Object class=PointLightComponent name=LComp
         LightColor=(R=255,G=255,B=255)

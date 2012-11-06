@@ -29,7 +29,7 @@ var rotator FinalCameraRotation;
 simulated event PostBeginPlay()
 {
 	super.PostBeginPlay();
-	SetCollisionType(COLLIDE_NoCollision);
+//	SetCollisionType(COLLIDE_NoCollision);
 }
 
 //==========================FUNCTIONS==========================================
@@ -157,8 +157,6 @@ defaultproperties
 {
 	CamHeight = 47.0
 	CamOffsetDistance=200.0
-	
-	BlockRigidBody=TRUE
 	
 	//PreviousUnboundedRotation=(Pitch=0,Yaw=-108928,Roll=0)
 	PreviousUnboundedRotation=(Pitch=0,Yaw=0,Roll=0)

@@ -186,7 +186,7 @@ event PostRender()
 		
 		Canvas.SetDrawColor( 255, 0, 0, 255 );
 		Canvas.SetPos( 1360, 990 );
-		Canvas.DrawText( "Number of Drones: "$DronesGame(WorldInfo.Game).NumDrones,,1.5,1.5 );		
+		Canvas.DrawText( "Number of Drones: "$DronesGame(WorldInfo.Game).Drones.Length,,1.5,1.5 );		
 	
       // Set the crosshair position to the center of the screen
       Canvas.SetPos( (HUDWidth/2 - CrosshairTexture.SizeX/32), (HUDHeight/2 - CrosshairTexture.SizeY/32)); 
