@@ -16,64 +16,34 @@ var float CurrentDroneSpeed;
 /** Inherited from parent class */
 event PostBeginPlay()
 {
-	local DronesBrickKActor NewBrick, Brick;
+	local DronesBrickKActor NewBrick;
 	local DronesDrone NewDrone;
 	local int i;
 	local rotator r;
-	local vector v;
-
+	local vector v;		
 			
 	// invoke the PostBeginPlay method of the parent class
 	super.PostBeginPlay();
-
-	/*
-	r.Pitch = 0;
-	r.Yaw = 0;
-	r.Roll = 0;
-	
-	v.X = 0;
-	v.Y = 0;
-	v.Z = 20;
-	NewBrick = Spawn(class'DronesBrickKActor',,,v,r,,);
-	NewBrick.SetPhysics(PHYS_rigidbody);
-	Bricks.AddItem(NewBrick);
-	
-	v.X = 40;
-	v.Y = 0;
-	v.Z = 20;
-	NewBrick = Spawn(class'DronesBrickKActor',,,v,r,,);
-	NewBrick.SetPhysics(PHYS_rigidbody);
-	Bricks.AddItem(NewBrick);
-	
-	foreach Bricks(Brick)
-	{
-		`Log("Brick: "$Brick$" Location: "$Brick.Location);
-	}
-	foreach Bricks(Brick)
-	{
-		IsBrickSizedLocationOccupied(Brick.Location, Brick.Rotation);
-	}
-	*/
-	
-
+		
 	// spawn bricks
-	for( i=0; i<1000; i++)
+	for( i=0; i<10000; i++)
 	{
-		v.X = RandRange(-2500, 2500);
-		v.Y = RandRange(-2500, 2500);
+		v.X = RandRange(-5000, 5000);
+		v.Y = RandRange(-5000, 5000);
 		v.Z = RandRange(50, 500);
 		r.Pitch = 0;
 		r.Yaw = 0;
 		r.Roll = 0;
 
 		NewBrick = Spawn(class'DronesBrickKActor',,,v,r,,);
-		NewBrick.SetPhysics(PHYS_rigidbody);
+		//NewBrick.SetPhysics(PHYS_rigidbody);
+		NewBrick.SetPhysics(PHYS_NONE);
 			
 		Bricks.AddItem(NewBrick);
 	}
 
 	// spawn drones
-	for( i=0; i<5; i++)
+	for( i=0; i<10; i++)
 	{
 		v.X = i*1000;
 		v.Y = 0;
@@ -85,7 +55,6 @@ event PostBeginPlay()
 		
 		Drones.AddItem(NewDrone);
 	}
-
 }
 
 event Tick ( float DeltaTime )
@@ -93,8 +62,6 @@ event Tick ( float DeltaTime )
 	local DronesDrone FreshDrone;
 	local vector v;
 
-	//`Log("number of Drones" $NumActors);
-/*
 	If (Drones.Length <= 0)
 	{
 		v.X = 0;
@@ -106,7 +73,6 @@ event Tick ( float DeltaTime )
 		//`Log("end of game");
 		//ConsoleCommand("open DronesLandscape01");
 	}
-*/
 }
 
 /*

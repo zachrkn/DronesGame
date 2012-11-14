@@ -20,6 +20,31 @@ var array<DronesBrickConstraint> ConstraintsApplied;
 var EAvailability Availability;
 
 //==========================EVENTS==========================================
+/*
+event RigidBodyCollision (PrimitiveComponent HitComponent, PrimitiveComponent OtherComponent, const out CollisionImpactData RigidCollisionData, int ContactIndex)
+{
+	super.RigidBodyCollision(HitComponent, OtherComponent, RigidCollisionData, ContactIndex);
+	`Log("RBC! Brick: "$Self$" Location: "$Location$" OtherComponent: "$OtherComponent$ " OtherComponent.Owner: "$OtherComponent.Owner);
+}
+
+event HitWall (Object.Vector HitNormal, Actor Wall, PrimitiveComponent WallComp)
+{
+	super.HitWall(HitNormal, Wall, WallComp);
+	`Log("HitWall!! Brick: "$Self$" Location: "$Location$" Wall: "$Wall);
+}
+
+event Bump (Actor Other, PrimitiveComponent OtherComp, Object.Vector HitNormal)
+{
+	super.Bump(Other, OtherComp, HitNormal);
+	`Log("Bump!! Brick: "$Self$" Location: "$Location$" Other "$Other);	
+}
+
+event Touch (Actor Other, PrimitiveComponent OtherComp, Object.Vector HitLocation, Object.Vector HitNormal)
+{
+	super.Touch(Other, OtherComp, HitLocation, HitNormal);
+	`Log("Touch!! Brick: "$Self$" Location: "$Location$" Other "$Other);	
+}
+*/
 simulated event FellOutOfWorld (class<DamageType> dmgType)
 {
 	DronesGame(WorldInfo.Game).Bricks.RemoveItem(Self);
@@ -55,54 +80,13 @@ simulated event PostBeginPlay()
 
 event Tick (float DeltaTime)
 {
-//	local SkeletalMeshComponent ThisSkeletalMeshComponent;
-//	local vector SocketLocation;
-//	local int i;
-
 	local DronesBrickConstraint ThisConstraint;
-	
 	
 	foreach ConstraintsApplied(ThisConstraint)
 	{
 		//`Log("Brick: "$Self$" constraint: "$ThisConstraint);
 	}
-	//`Log("Tick! Brick: "$Self$" Location: "$Location);
-	
-/*
-	foreach ComponentList(class'SkeletalMeshComponent', ThisSkeletalMeshComponent)
-	{
-		for (i=1; i<7; i++)
-		{
-		switch( i )
-		{
-			case 1:
-				ThisSkeletalMeshComponent.GetSocketWorldLocationAndRotation('Socket01', SocketLocation);
-				DrawDebugSphere(SocketLocation, 5, 5, 255, 0, 0);
-				break;
-			case 2:
-				ThisSkeletalMeshComponent.GetSocketWorldLocationAndRotation('Socket02', SocketLocation);
-				DrawDebugSphere(SocketLocation, 5, 5, 255, 255, 0);
-				break;
-			case 3:
-				ThisSkeletalMeshComponent.GetSocketWorldLocationAndRotation('Socket03', SocketLocation);
-				DrawDebugSphere(SocketLocation, 5, 5, 0, 255, 0);
-				break;
-			case 4:
-				ThisSkeletalMeshComponent.GetSocketWorldLocationAndRotation('Socket04', SocketLocation);
-				DrawDebugSphere(SocketLocation, 5, 5, 0, 255, 255);
-				break;
-			case 5:
-				ThisSkeletalMeshComponent.GetSocketWorldLocationAndRotation('Socket05', SocketLocation);
-				DrawDebugSphere(SocketLocation, 5, 5, 0, 0, 255);
-				break;
-			case 6:
-				ThisSkeletalMeshComponent.GetSocketWorldLocationAndRotation('Socket06', SocketLocation);
-				DrawDebugSphere(SocketLocation, 5, 5, 255, 0, 255);
-				break;
-		}
-		}
-	}
-*/
+	//`Log("Tick! Brick: "$Self$" Location: "$Location$" Rotation: "$Rotation);
 }
 
 event ApplyImpulse( Vector ImpulseDir, float ImpulseMag, Vector HitLocation, optional TraceHitInfo HitInfo, optional class<DamageType> DamageType )
@@ -146,7 +130,8 @@ function SetBaseToSelf()
 	SetHardAttach(FALSE);
 	SetBase(none);
 	// set physics to rigid body so the brick moves and acts like a brick again
-	SetPhysics(PHYS_RigidBody);
+	//SetPhysics(PHYS_RigidBody);
+	SetPhysics(PHYS_NONE);
 }
 
 function LoseMomentum()
@@ -188,36 +173,55 @@ function CreateConstraintWithBrick(DronesBrickKActor InBrick)
 	NewConstraint = Spawn(class'DronesBrickConstraint',,,Location,,,);
 	NewConstraint.InitConstraint(Self, InBrick);
 	InBrick.ConstraintsApplied.AddItem(NewConstraint);
-	ConstraintsApplied.AddItem(NewConstraint);			
+	ConstraintsApplied.AddItem(NewConstraint);
 }
 
 function CreateConstraintWithAllTouchingBricks()
 {
-	local Actor traceHit;
-	local vector hitLoc, hitNorm, startTraceLoc, endTraceLoc, traceExtent;
-	local SkeletalMeshComponent ThisSkeletalMeshComponent;
-	foreach ComponentList(class'SkeletalMeshComponent', ThisSkeletalMeshComponent)
+	local array<DronesBrickKActor> TouchingBricks;
+	local DronesBrickKActor TouchingBrick;
+
+	TraceTouchingBricks(vect(-20,-40,-15), vect(-20,40,-15), Location, Rotation, TouchingBricks);
+	TraceTouchingBricks(vect(-20,-40,15), vect(-20,40,15), Location, Rotation, TouchingBricks);
+	TraceTouchingBricks(vect(20,-40,-15), vect(20,40,-15), Location, Rotation, TouchingBricks);
+	TraceTouchingBricks(vect(20,-40,15), vect(20,40,15), Location, Rotation, TouchingBricks);
+	TraceTouchingBricks(vect(0,-40,-19.99), vect(0,40,-19.99), Location, Rotation, TouchingBricks);
+	TraceTouchingBricks(vect(0,-40,19.99), vect(0,40,19.99), Location, Rotation, TouchingBricks);
+	TraceTouchingBricks(vect(19.99,-40,0), vect(19.99,40,0), Location, Rotation, TouchingBricks);
+	TraceTouchingBricks(vect(-19.99,-40,0), vect(-19.99,40,0), Location, Rotation, TouchingBricks);
+	TraceTouchingBricks(vect(0,-40,-17), vect(0,-40,17), Location, Rotation, TouchingBricks);
+	TraceTouchingBricks(vect(0,40,17), vect(0,40,-17), Location, Rotation, TouchingBricks);
+	
+	foreach TouchingBricks(TouchingBrick)
 	{
-		ThisSkeletalMeshComponent.GetSocketWorldLocationAndRotation('Socket07', startTraceLoc);
-		ThisSkeletalMeshComponent.GetSocketWorldLocationAndRotation('Socket08', endTraceLoc);	
-		traceExtent.X = 20.1;
-		traceExtent.Y = 20.1;
-		traceExtent.Z = 20.1;
-		traceHit = Trace(hitLoc, hitNorm, endTraceLoc, startTraceLoc, ,traceExtent, ,);
-		
-		// TRACEACTORS
-		//`Log("Checking to see if any bricks are touching");
-		if(traceHit!=NONE)
+		`Log("I am: "$Self$" creating constraint with: "$TouchingBrick);
+		CreateConstraintWithBrick(TouchingBrick);
+	}
+}
+
+function TraceTouchingBricks(vector StartTraceVectorOffset, vector EndTraceVectorOffset, vector InLocation, rotator InRotation, out array<DronesBrickKActor> TouchingBricks)
+{
+	local vector StartTraceLoc, EndTraceLoc, HitLoc, HitNorm, TraceExtent;
+	local DronesBrickKActor TraceHitBrick;
+	
+	local float steps, counter;
+	
+	StartTraceLoc = InLocation + (StartTraceVectorOffset >> InRotation);
+	EndTraceLoc = InLocation + (EndTraceVectorOffset >> InRotation);
+	TraceExtent = vect(2,2,2);
+	
+	steps = 100;
+	for(counter=1/steps;counter<1;counter+=1/steps)
+	{
+		//DrawDebugBox(StartTraceLoc+counter*(EndTraceLoc-StartTraceLoc),TraceExtent,255,255,255,true);
+	}
+	
+	foreach TraceActors(class'DronesBrickKActor', TraceHitBrick, HitLoc, HitNorm, EndTraceLoc, StartTraceLoc, TraceExtent) 
+	{ 
+		if( TouchingBricks.Find(TraceHitBrick) == -1 )
 		{
-			if(traceHit.class == class'DronesBrickKActor')
-			{
-				if( (traceHit != Self) )
-				{
-					//`Log("Creating constraint!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-					CreateConstraintWithBrick(DronesBrickKActor(traceHit));
-				}
-			}
-		}	
+			TouchingBricks.AddItem(TraceHitBrick);
+		}
 	}
 }
 
@@ -232,6 +236,7 @@ DefaultProperties
 	bNoDelete=FALSE
 	bBlockActors=TRUE
 	bMovable=TRUE
+	bCollideActors=TRUE
 	
 	bNoEncroachCheck=FALSE
 	
@@ -241,27 +246,27 @@ DefaultProperties
 	Begin Object Name=StaticMeshComponent0
         StaticMesh=DronesPackage.Meshes.Brick_large_mesh
 
-//		BlockRigidBody=TRUE
-//		CollideActors=TRUE
-//		BlockActors=TRUE
-//		bNotifyRigidBodyCollision=TRUE
-//		ScriptRigidBodyCollisionThreshold=0.0001
-//		BlockZeroExtent=TRUE
-//		BlockNonZeroExtent=TRUE
-//		RBChannel=RBCC_Untitled2
-//		RBCollideWithChannels=(Default=TRUE, GameplayPhysics=FALSE, Untitled1=FALSE, Untitled2=TRUE)
+		BlockRigidBody=TRUE
+		CollideActors=TRUE
+		BlockActors=TRUE
+		bNotifyRigidBodyCollision=TRUE
+		ScriptRigidBodyCollisionThreshold=0.0001
+		BlockZeroExtent=TRUE
+		BlockNonZeroExtent=TRUE
+		RBChannel=RBCC_Untitled2
+		RBCollideWithChannels=(Default=TRUE, GameplayPhysics=FALSE, Untitled1=FALSE, Untitled2=TRUE)
     End Object
 
 	Begin Object Class=SkeletalMeshComponent Name=InitialSkeletalMesh
-//		CastShadow=FALSE
-//		bCastDynamicShadow=FALSE
-//		bOwnerNoSee=FALSE
-//		BlockRigidBody=FALSE
-//		CollideActors=FALSE
-//		BlockZeroExtent=FALSE
-//		BlockNonZeroExtent=FALSE
-//		BlockActors=TRUE
-//		bNotifyRigidBodyCollision=FALSE
+		CastShadow=FALSE
+		bCastDynamicShadow=FALSE
+		bOwnerNoSee=FALSE
+		BlockRigidBody=FALSE
+		CollideActors=FALSE
+		BlockZeroExtent=FALSE
+		BlockNonZeroExtent=FALSE
+		BlockActors=FALSE
+		bNotifyRigidBodyCollision=FALSE
 		HiddenEditor=TRUE
 		HiddenGame=TRUE
 		//What to change if you'd like to use your own meshes and animations

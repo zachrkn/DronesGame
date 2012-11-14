@@ -71,11 +71,59 @@ function SetBrickRelativeLocationsArray(array<vector> ParentOneRelLocArray, arra
 
 function SetBrickRelativeRotationsArray(array<rotator> ParentOneRelRotArray, array<rotator> ParentTwoRelRotArray)
 {
+	local int NewArrayLength;
+	local int ArrayLengthDiff;
 	local int i;
-	local rotator r;
-	r.Pitch = 0; r.Yaw = 0; r.Roll = 0;
-	for (i=0; i<45; i++)
+	
+	`Log("In function SetBrickRelativeRotationsArray");
+	ArrayLengthDiff = Abs(ParentOneRelRotArray.Length - ParentTwoRelRotArray.Length);
+	`Log("Difference between length of two arrays "$ArrayLengthDiff);
+	if( ParentOneRelRotArray.Length <= ParentTwoRelRotArray.Length )
 	{
-		BrickRelativeRotationsArray[i] = r;
+		`Log("Parent one's array was shorter, or they were the same legth");
+		NewArrayLength = ParentOneRelRotArray.Length + ArrayLengthDiff;
+		for( i=0; i<NewArrayLength; i++)
+		{
+			if( i>=ParentOneRelRotArray.Length )
+			{
+				BrickRelativeRotationsArray[i] = ParentTwoRelRotArray[i];
+				`Log("i is greater than or equal to parent one (the shorter array)'s length, so i'm going to set location to parent two's location "$BrickRelativeLocationsArray[i]);
+			}
+			else
+			{
+				BrickRelativeRotationsArray[i] = RLerp(ParentOneRelRotArray[i], ParentTwoRelRotArray[i], 0.5F);
+				`Log("ParentOneRotation "$ParentOneRelRotArray[i]$" and ParentTwoRotation "$ParentTwoRelRotArray[i]$" and child rotation "$BrickRelativeRotationsArray[i]);
+			}
+		}
+	}
+	else
+	{
+		`Log("Parent two's array was shorter");
+		NewArrayLength = ParentTwoRelRotArray.Length + ArrayLengthDiff;
+		for( i=0; i<NewArrayLength; i++)
+		{
+			if( i>=ParentTwoRelRotArray.Length )
+			{
+				BrickRelativeRotationsArray[i] = ParentOneRelRotArray[i];
+				`Log("i is greater than or equal to parent two (the shorter array)'s length, so i'm going to set location to parent two's location "$BrickRelativeLocationsArray[i]);
+			}
+			else
+			{
+				BrickRelativeRotationsArray[i] = RLerp(ParentOneRelRotArray[i], ParentTwoRelRotArray[i], 0.5F);
+				`Log("ParentOneRotation "$ParentOneRelRotArray[i]$" and ParentTwoRotation "$ParentTwoRelRotArray[i]$" and child rotation "$BrickRelativeRotationsArray[i]);
+			}
+		}
+	}
+	
+	if( RandRange(0,100) < 25)
+	{
+		for( i=0; i<BrickRelativeRotationsArray.Length; i++)
+		{
+			if( RandRange(0,100) < 15)
+			{
+				BrickRelativeLocationsArray[i].X + RandRange(-50,50);
+				BrickRelativeLocationsArray[i].Y + RandRange(-50,50);
+			}
+		}
 	}
 }

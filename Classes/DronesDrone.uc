@@ -54,20 +54,15 @@ function UpdateDroneColor()
 	local SkeletalMeshComponent ThisSkeletalMeshComponent;
 	local MaterialInstanceConstant ThisMaterialInstanceConstant;
 	local DronesDroneAIController AIController;
-	//local vector AtoB, MidPoint;
-	local vector DestinationRangeCenter;
 	local LinearColor NewColor;
 	
 	AIController = DronesDroneAIController(Controller);
-	// find midpoint of targetdestinationrange
-	DestinationRangeCenter = DronesDroneAIController(Controller).DestinationRangeCenter;
 	
 	// map that range to color value so that 0,0,100 is white
 	NewColor.R = Abs(AIController.StructureBlueprint.StructureLocation.X / 4000);
 	NewColor.G = Abs(AIController.StructureBlueprint.StructureLocation.Y / 4000);
 	NewColor.B = Abs((AIController.StructureBlueprint.StructureLocation.Z - 100) / 300);
 	NewColor.A = 1;
-	`Log("NewColor.R "$NewColor.R$" NewColor.G "$NewColor.G$" NewColor.B "$NewColor.B);
 	
 	foreach ComponentList(class'SkeletalMeshComponent', ThisSkeletalMeshComponent)
 	{

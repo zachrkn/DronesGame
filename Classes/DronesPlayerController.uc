@@ -4,7 +4,6 @@ class DronesPlayerController extends PlayerController;
 //==========================VARIABLES==========================================
 var Actor LastTraceHit;
 var DronesDrone LastTraceHitDrone;
-var DronesFogVolumeConstantDensityInfo DestinationFogVolume;
 var array<DronesBrickKActor> LastPhantomStructureBrickArray;
 
 var DronesHUDWrapper HUDWrapper;
@@ -81,15 +80,19 @@ event PlayerTick( float DeltaTime )
 
 function BuildPhantomStructure( DronesStructureBlueprint Blueprint )
 {	
+	local int i;
 	local vector v;
+	local rotator r;
 	local DronesBrickKActor NewPhantomBrick;
 	local StaticMeshComponent ThisStaticMeshComponent;
 	local MaterialInstanceConstant ThisMaterialInstanceConstant;
 	local float CurrentOpacity;
 	
-	foreach Blueprint.BrickWorldLocationsArray(v)
+	for( i=0; i<Blueprint.BrickWorldLocationsArray.Length; i++)
 	{
-		NewPhantomBrick = Spawn(class'DronesBrickKActor',,,v,Blueprint.StructureRotation,,FALSE);
+		v = Blueprint.BrickWorldLocationsArray[i];
+		r = Blueprint.BrickWorldRotationsArray[i];
+		NewPhantomBrick = Spawn(class'DronesBrickKActor',,,v,r,,FALSE);
 		NewPhantomBrick.LoseCollision();
 		NewPhantomBrick.SetPhysics(PHYS_None);
 		
@@ -114,22 +117,6 @@ function DestroyPhantomStructure( )
 		Brick.Destroy();
 	}
 }
-/*	OUTDATED CODE FOR DRAWING FOG VOLUMES FOR DRONE DESTINATION RANGES
-			r.Pitch = 0; r.Yaw = 0; r.Roll = 0;
-
-			NewScale3D.X = DronesDroneAIController(TraceHitDrone.Controller).DestinationRangeSize.X / 256;
-			NewScale3D.Y = DronesDroneAIController(TraceHitDrone.Controller).DestinationRangeSize.Y / 256;
-			NewScale3D.Z = DronesDroneAIController(TraceHitDrone.Controller).DestinationRangeSize.Z / 256;
-			
-			DestinationFogVolume = Spawn(class'DronesFogVolumeConstantDensityInfo',,,DronesDroneAIController(TraceHitDrone.Controller).DestinationRangeCenter,r,,);
-			DestinationFogVolume.SetDrawScale3D (NewScale3D);
-	
-			foreach DestinationFogVolume.ComponentList(class'StaticMeshComponent', ThisStaticMeshComponent)
-			{
-				ThisMaterialInstanceConstant = ThisStaticMeshComponent.CreateAndSetMaterialInstanceConstant(0);
-			}
-			ThisMaterialInstanceConstant.SetVectorParameterValue('EmissiveColor',TraceHitDrone.DroneColor);
-*/
 
  
 //==========================EXECS==========================================

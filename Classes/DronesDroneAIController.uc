@@ -1,7 +1,7 @@
 //==========================CLASS DECLARATION==================================
 class DronesDroneAIController extends AIController
 	DependsOn(DronesGame);
-
+	
 //==========================VARIABLES==========================================
 var DronesBrickKActor PickUpBrick;
 
@@ -17,6 +17,8 @@ var DronesStructureBlueprint StructureBlueprint;
 
 var DronesDrone PotentialMate;
 
+var bool bRemovingBrickState;
+
 
 //==========================EVENTS==========================================
 event Possess( Pawn inPawn, bool bVehicleTransition)
@@ -29,12 +31,20 @@ event Possess( Pawn inPawn, bool bVehicleTransition)
 //==========================STATES==========================================
 auto state Idle
 {
-	local DronesBrickKActor Brick;
 	local DronesDrone Drone;
+	
 	event Tick (float DeltaTime)
     {
 		EveryTickStuff();
-		
+/*
+		`Log("in Idle state Tick");
+		// find out if there are any bricks occupying blueprint space that are not exactly aligned
+		if( GetFirstBrickOccupyingBlueprintSpaceThatIsOutOfAlignment(StructureBlueprint, PickUpBrick) )
+		{
+			`Log("a brick occupying blueprint space was found");
+			GotoState('GetBrick');
+		}
+*/
 		if(DoesAnAvailableBrickExist())
 		{
 			if( GetFirstEmptyBlueprintLocationAndRotation(StructureBlueprint, DropLocation, DropRotation) )
@@ -62,10 +72,8 @@ Begin:
 
 state GetBrick
 {
-	local StaticMeshComponent ThisStaticMeshComponent;
 	local int i;
 	local DronesBrickConstraint Constraint;
-	local DronesBrickKActor OtherConstrainedBrick;
 
 	event Tick (float DeltaTime)
 	{
@@ -78,13 +86,11 @@ state GetBrick
 		}
 		
 		// if the Drone reaches the brick, disappear the brick, make it unavailable, and pick an unoccupied brick location to place the held brick
-		if ( IsPawnAtTargetBrick())
+		if ( IsPawnAtTargetBrick() )
 		{
 			//`Log("In state GetBrick, checking to see if there is an empty blueprint location, and to set DropLocation");
 			if( GetFirstEmptyBlueprintLocationAndRotation(StructureBlueprint, DropLocation, DropRotation) )
-			{	
-				PickUpBrick = GetClosestAvailableBrickInArray( DronesGame(WorldInfo.Game).Bricks, Pawn.Location );
-			
+			{				
 				PickUpBrick.SetBaseToDrone(DronesDrone(Pawn));
 				PickUpBrick.LoseCollision();
 			
@@ -120,9 +126,6 @@ Begin:
 
 state PlaceBrick
 {
-	local StaticMeshComponent ThisStaticMeshComponent;
-	local bool bSpawnChildDrone;
-
 	event Tick (float DeltaTime)
 	{
 		EveryTickStuff();
@@ -143,15 +146,100 @@ state PlaceBrick
 				PickUpBrick.LoseMomentum();
 				PickUpBrick.GainCollision();
 				PickUpBrick.SetPositionAndRotation(DropLocation, DropRotation);
-				PickUpBrick.Availability = AVAIL_Available;
 				
-				`Log("Dropped PickUpBrick.  PickUpBrick.Location: "$PickUpBrick.Location$" and PickUpBrick.Rotation: "$PickUpBrick.Rotation);
+				//`Log("Dropped PickUpBrick.  PickUpBrick.Location: "$PickUpBrick.Location$" and PickUpBrick.Rotation: "$PickUpBrick.Rotation);
 				
 				//PickUpBrick.CreateConstraintWithBrick(AdjacentBrick); // shouldn't need this because next line should include adjacent brick
-				//PickUpBrick.CreateConstraintWithAllTouchingBricks();
+				PickUpBrick.CreateConstraintWithAllTouchingBricks();
 												
-				// make the brick available
+				// change the brick's availablity status to instructure
 				PickUpBrick.Availability = AVAIL_InStructure;
+				
+				bHoldingBrick = FALSE;
+													
+				GotoState('Idle');
+			}
+		}
+		else
+		{
+			MoveDroneTowardLocation(DropLocation, DeltaTime);
+		}
+	}
+	
+Begin:
+}
+
+state GetBrickToRemove
+{
+	local int i;
+	local DronesBrickConstraint Constraint;
+
+	event Tick (float DeltaTime)
+	{
+		EveryTickStuff();	
+		
+		// if the Drone reaches the brick, disappear the brick, make it unavailable, and pick an unoccupied brick location to place the held brick
+		if ( IsPawnAtTargetBrick() )
+		{
+			PickUpBrick.SetBaseToDrone(DronesDrone(Pawn));
+			PickUpBrick.LoseCollision();
+			
+			// remove constraints from PickUpBrick, remove the reference to those constraints from the other bricks they affected, and delete the constraints
+			for (i=0; i<PickUpBrick.ConstraintsApplied.Length; i++)
+			{
+				Constraint = PickUpBrick.ConstraintsApplied[i];
+				DronesBrickKActor(Constraint.ConstraintActor1).ConstraintsApplied.RemoveItem(Constraint);
+				DronesBrickKActor(Constraint.ConstraintActor2).ConstraintsApplied.RemoveItem(Constraint);
+				Constraint.Destroy();
+			}
+	
+			PickUpBrick.Availability = AVAIL_InTransit;
+				
+			bHoldingBrick = TRUE;
+			
+			// if there's an empty blueprint location for this brick to go, that would be the best place for it rather than removing it from the structure
+			if( GetFirstEmptyBlueprintLocationAndRotation(StructureBlueprint, DropLocation, DropRotation) )
+			{				
+				GotoState('PlaceBrick');
+			}
+			else
+			{
+//				DropLocation = GetRandomDropLocationForRemovingBrick;
+				GotoState('PlaceBrickRemove');
+			}
+		}
+		// if drone is not at the PickUpBrick yet, keep moving toward it
+		else
+		{
+			MoveDroneTowardLocation(PickUpBrick.Location, DeltaTime);
+		}
+	}
+
+Begin:
+}
+
+state PlaceBrickAtRemovalLocation
+{
+	event Tick (float DeltaTime)
+	{
+		EveryTickStuff();
+		if ( IsPawnAtLocation(DropLocation) )
+		{
+			// check to make sure the DropLocation is still unoccupied; if it is, get a new drop location
+			if ( IsBrickSizedLocationOccupied(DropLocation,DropRotation) )
+			{
+				if( !GetFirstEmptyBlueprintLocationAndRotation(StructureBlueprint, DropLocation, DropRotation) )
+				{	
+					GotoState('Idle');
+				}
+			}
+			else
+			{
+				PickUpBrick.SetBaseToSelf();
+				PickUpBrick.LoseMomentum();
+				PickUpBrick.GainCollision();
+				PickUpBrick.SetPositionAndRotation(DropLocation, DropRotation);
+				PickUpBrick.Availability = AVAIL_Available;							
 				
 				bHoldingBrick = FALSE;
 													
@@ -240,6 +328,120 @@ function bool GetFirstEmptyBlueprintLocationAndRotation(DronesStructureBlueprint
 	return FALSE;
 }
 
+function bool GetFirstBrickOccupyingBlueprintSpaceThatIsOutOfAlignment(DronesStructureBlueprint Blueprint, out DronesBrickKActor OutBrick)
+{
+	local vector CurrentLoc;
+	local rotator CurrentRot;
+	local int i;
+	local array<DronesBrickKActor> OccupyingBricks;
+	local DronesBrickKActor Brick;
+	
+	`Log("Function called - GetFirstBrickOccupyingSpace...");
+	`Log("Blueprint.class.name "$Blueprint.class.name);
+	for (i=0; i<Blueprint.BrickWorldLocationsArray.Length; i++)
+	{
+		CurrentLoc = Blueprint.BrickWorldLocationsArray[i];
+		CurrentRot = Blueprint.BrickWorldRotationsArray[i];
+		`Log("Blueprint slot location: "$CurrentLoc$" and rotation: "$CurrentRot);
+		GetBricksOccupyingBrickSizedLocation(CurrentLoc, CurrentRot, OccupyingBricks);
+		`Log("Number of bricks occupying the current blueprint slot location: "$OccupyingBricks.Length);
+		if( OccupyingBricks.Length > 0)
+		{
+			foreach OccupyingBricks(Brick)
+			{
+				if( (Brick.Location != CurrentLoc) || (OutBrick.Rotation != CurrentRot) )
+				{
+					OutBrick = Brick;
+					return TRUE;
+				}
+			}
+		}
+	}
+	return FALSE;
+}
+
+function bool SpecialTrace(vector StartTraceVectorOffset, vector EndTraceVectorOffset, vector InLocation, rotator InRotation)
+{
+	local vector StartTraceLoc, EndTraceLoc, HitLoc, HitNorm;
+	local Actor TraceHit;
+	StartTraceLoc = InLocation + (StartTraceVectorOffset >> InRotation);
+	EndTraceLoc = InLocation + (EndTraceVectorOffset >> InRotation);
+	TraceHit = Trace(HitLoc, HitNorm, EndTraceLoc, StartTraceLoc);
+	If(TraceHit != NONE)
+	{
+		//DrawDebugLine(StartTraceLoc, EndTraceLoc,255,0,0,true);
+		return TRUE;
+	}
+		//DrawDebugLine(StartTraceLoc, EndTraceLoc,0,255,0,true);
+	return FALSE;
+}
+
+function bool IsBrickSizedLocationOccupied(vector InLocation, rotator InRotation)
+{
+	if( SpecialTrace(vect(-19.95,-39.5,-19.95), vect(-19.95,39.5,-19.95), InLocation, InRotation) ) {
+		return TRUE;
+	}
+	else if( SpecialTrace(vect(-19.95,-39.5,19.95), vect(-19.95,39.5,19.95), InLocation, InRotation) ) {
+		return TRUE;
+	}
+	else if( SpecialTrace(vect(19.95,-39.5,-19.95), vect(19.95,39.5,-19.95), InLocation, InRotation) ) {
+		return TRUE;
+	}
+	else if( SpecialTrace(vect(19.95,-39.5,19.95), vect(19.95,39.5,19.95), InLocation, InRotation) ) {
+		return TRUE;
+	}
+	
+	else if( SpecialTrace(vect(0,-39.5,-19.95), vect(0,39.5,-19.95), InLocation, InRotation) ) {
+		return TRUE;
+	}
+	else if( SpecialTrace(vect(0,-39.5,19.95), vect(0,39.5,19.95), InLocation, InRotation) ) {
+		return TRUE;
+	}
+	else if( SpecialTrace(vect(19.95,-39.5,0), vect(19.95,39.5,0), InLocation, InRotation) ) {
+		return TRUE;
+	}
+	else if( SpecialTrace(vect(-19.95,-39.5,0), vect(-19.95,39.5,0), InLocation, InRotation) ) {
+		return TRUE;
+	}
+
+	else if( SpecialTrace(vect(0,-39.5,-19.95), vect(0,-39.5,19.95), InLocation, InRotation) ) {
+		return TRUE;
+	}
+	else if( SpecialTrace(vect(0,39.5,19.95), vect(0,39.5,-19.95), InLocation, InRotation) ) {
+		return TRUE;
+	}
+	return FALSE;
+}
+
+function GetBricksOccupyingBrickSizedLocation(vector InLocation, rotator InRotation, optional out array<DronesBrickKActor> OccupyingBricks)
+{
+	SpecialTraceGetAllTraceHitBricks(vect(-19.95,-39.5,-19.95), vect(-19.95,39.5,-19.95), InLocation, InRotation, OccupyingBricks);
+	SpecialTraceGetAllTraceHitBricks(vect(-19.95,-39.5,19.95), vect(-19.95,39.5,19.95), InLocation, InRotation, OccupyingBricks);
+	SpecialTraceGetAllTraceHitBricks(vect(19.95,-39.5,-19.95), vect(19.95,39.5,-19.95), InLocation, InRotation, OccupyingBricks);
+	SpecialTraceGetAllTraceHitBricks(vect(19.95,-39.5,19.95), vect(19.95,39.5,19.95), InLocation, InRotation, OccupyingBricks);
+	SpecialTraceGetAllTraceHitBricks(vect(0,-39.5,-19.95), vect(0,39.5,-19.95), InLocation, InRotation, OccupyingBricks);
+	SpecialTraceGetAllTraceHitBricks(vect(0,-39.5,19.95), vect(0,39.5,19.95), InLocation, InRotation, OccupyingBricks);
+	SpecialTraceGetAllTraceHitBricks(vect(19.95,-39.5,0), vect(19.95,39.5,0), InLocation, InRotation, OccupyingBricks);
+	SpecialTraceGetAllTraceHitBricks(vect(-19.95,-39.5,0), vect(-19.95,39.5,0), InLocation, InRotation, OccupyingBricks);
+	SpecialTraceGetAllTraceHitBricks(vect(0,-39.5,-19.95), vect(0,-39.5,19.95), InLocation, InRotation, OccupyingBricks);
+	SpecialTraceGetAllTraceHitBricks(vect(0,39.5,19.95), vect(0,39.5,-19.95), InLocation, InRotation, OccupyingBricks);
+}
+
+function SpecialTraceGetAllTraceHitBricks(vector StartTraceVectorOffset, vector EndTraceVectorOffset, vector InLocation, rotator InRotation, optional out array<DronesBrickKActor> TraceHitBricks)
+{
+	local vector StartTraceLoc, EndTraceLoc, HitLoc, HitNorm;
+	local DronesBrickKActor TraceHitBrick;
+	StartTraceLoc = InLocation + (StartTraceVectorOffset >> InRotation);
+	EndTraceLoc = InLocation + (EndTraceVectorOffset >> InRotation);
+	foreach TraceActors(class'DronesBrickKActor', TraceHitBrick, HitLoc, HitNorm, EndTraceLoc, StartTraceLoc) 
+	{
+		if( TraceHitBricks.Find(TraceHitBrick) == -1 )
+		{
+			TraceHitBricks.AddItem(TraceHitBrick);
+		}
+	}
+}
+
 function bool DoesAnAvailableBrickExist()
 {
 	local DronesBrickKActor Brick;
@@ -280,6 +482,11 @@ function DronesBrickKActor GetClosestAvailableBrickInArray(array<DronesBrickKAct
 	return ClosestBrick;
 }
 
+function vector GetRandomDropLocationForRemovingBrick()
+{
+	
+}
+
 function MoveDroneTowardLocation(vector InLoc, float DeltaTime)
 {
 	local vector NewLocation;
@@ -302,19 +509,6 @@ function MoveDroneTowardLocation(vector InLoc, float DeltaTime)
 	SetFocalPoint(InLoc);
 	Pawn.SetRotation(NewRotation);
 }
-
-function bool IsBrickSizedLocationOccupied(vector InLocation, rotator InRotation)
-{
-	local DronesBrickLocationTester BrickTester;
-	local bool bOverlap;
-	
-	BrickTester = Spawn(class'DronesBrickLocationTester',,,InLocation,InRotation,,);
-	bOverlap = BrickTester.DoesBrickOverlap();
-	BrickTester.Destroy();
-	//`Log("In function IsBrickSizedLocationOccupied, the answer is "$bOverlap);
-	return bOverlap;
-}
-
 
 function bool IsPawnAtLocation(vector InLocation)
 {
@@ -357,7 +551,7 @@ function bool ShouldSpawnNewDrone()
 function InitializeRandomBlueprint()
 {
 	local int rand;
-	rand = RandRange(0,2);
+	rand = 0;//RandRange(0,3);
 	
 	switch( rand )
 	{
@@ -369,9 +563,14 @@ function InitializeRandomBlueprint()
 			`Log("Initializing random blueprint, using Pyramid");
 			StructureBlueprint = Spawn(class'DronesStructureBlueprintPyramid');
 			break;
+		case 2:
+			`Log("Initializing random blueprint, using SculptureOne");
+			StructureBlueprint = Spawn(class'DronesStructureBlueprintSculptureOne');
+			break;
 	}
 	StructureBlueprint.StructureLocation.X = RandRange(-2500, 2500);
 	StructureBlueprint.StructureLocation.Y = RandRange(-2500, 2500);
+	
 	//StructureBlueprint.StructureLocation.X = 0;
 	//StructureBlueprint.StructureLocation.Y = 0;
 	StructureBlueprint.StructureLocation.Z = 20;
@@ -402,10 +601,14 @@ function InitializeChildBlueprint(DronesDrone ParentOne, DronesDrone ParentTwo, 
 	
 	`Log("ParentOneController.StructureBlueprint.StructureLocation "$ParentOneController.StructureBlueprint.StructureLocation$" ParentTwoController.StructureBlueprint.StructureLocation "$ParentTwoController.StructureBlueprint.StructureLocation);
 	ChildController.StructureBlueprint.StructureLocation = ParentOneController.StructureBlueprint.StructureLocation + (Normal(ParentTwoController.StructureBlueprint.StructureLocation - ParentOneController.StructureBlueprint.StructureLocation)*VSize(ParentOneController.StructureBlueprint.StructureLocation - ParentTwoController.StructureBlueprint.StructureLocation) /2);
-	If( RandRange(0,100) < 50)
+	If( RandRange(0,100) < 100)
 	{
-		ChildController.StructureBlueprint.StructureLocation.X + RandRange(-400,400);
-		ChildController.StructureBlueprint.StructureLocation.Y + RandRange(-400,400);
+		ChildController.StructureBlueprint.StructureLocation.X = RandRange(-2500,2500);
+		ChildController.StructureBlueprint.StructureLocation.Y = RandRange(-2500,2500);
+	/*
+		ChildController.StructureBlueprint.StructureLocation.X += RandRange(-400,400);
+		ChildController.StructureBlueprint.StructureLocation.Y += RandRange(-400,400);
+	*/
 	}
 	`Log("ChildController.StructureBlueprint.StructureLocation "$ChildController.StructureBlueprint.StructureLocation);
 	DronesStructureBluePrintMutant(ChildController.StructureBlueprint).SetBrickRelativeLocationsArray(ParentOneController.StructureBlueprint.BrickRelativeLocationsArray, ParentTwoController.StructureBlueprint.BrickRelativeLocationsArray);
@@ -413,336 +616,9 @@ function InitializeChildBlueprint(DronesDrone ParentOne, DronesDrone ParentTwo, 
 	ChildController.StructureBlueprint.InitializeBrickWorldLocationsAndRotationsArrays();
 }
 
-/*
-function DronesBrickKActor GetARandomAvailableBrick()
-{
-	local DronesBrickKActor Brick;
-	local int Index;
-	local array<DronesBrickKActor> Bricks;
-	Bricks = DronesGame(WorldInfo.Game).Bricks;
-	
-	// get a random brick
-	Index = RandRange(0, Bricks.Length);
-	Brick = Bricks[Index];
-
-	return Brick;
-}
-
-function SetDropLocationAndGoToDropState()
-{
-	if( ShouldDropLocationBeAdjacentToABrick() && DoesAnAvailableBrickWithinDestinationRangeThatHasAnUnoccupiedSocketLocationExist())
-	{
-		//`Log("Selecting a destination location that is adjacent to a brick");
-		AdjacentBrick = GetRandomAvailableBrickWithinDestinationRangeThatHasAnUnoccupiedSocketLocation(0);
-		AdjacentBrickSocketNumber = GetRandomUnoccupiedSocketNumberFromBrick(AdjacentBrick);
-		GotoState('PlaceBrickAdjacentToBrick');
-	}
-	else
-	{
-		//`Log("Getting a random target destination");
-		SetRandomDropLocationAndRotationWithinDestinationRange(DropLocation, DropRotation);
-		GotoState('PlaceBrickAtDropLocation');
-	}
-}
-
-function bool ShouldDropLocationBeAdjacentToABrick()
-{
-	if( RandRange(0,100) < ProbabilityForDropLocationToBeAdjacentToABrick ) 
-	{
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
-	}
-}
-
-function bool ShouldTargetBrickAttachToAdjacentBrick()
-{
-	if( RandRange(0,100) < ProbabilityForAttachingPickUpBrickToAdjacentBrick ) 
-	{
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
-	}
-}
-
-function SetRandomDropLocationAndRotationWithinDestinationRange(out vector TargetVector, out rotator TargetRotation)
-{	
-	local bool bOccupied;
-	
-	TargetVector.X = DestinationRangeCenter.X + (RandRange(0,DestinationRangeSize.X)-(DestinationRangeSize.X/2));
-	TargetVector.Y = DestinationRangeCenter.Y + (RandRange(0,DestinationRangeSize.Y)-(DestinationRangeSize.Y/2));
-	TargetVector.Z = DestinationRangeCenter.Z + (RandRange(0,DestinationRangeSize.Z)-(DestinationRangeSize.Z/2));
-	TargetRotation.Pitch = RandRange(0, 65556);
-	TargetRotation.Yaw = RandRange(0, 65556);	
-	TargetRotation.Roll = RandRange(0, 65556);
-	
-	//`Log("in function GetUnoccupiedRandomTargetDestinationWithinDestinationRange calling function IsBrickSizedLocationOccupied");
-	bOccupied = IsBrickSizedLocationOccupied(TargetVector,TargetRotation);
-	if( (bOccupied || (TargetVector.Z < -1.5)))
-	{
-		SetRandomDropLocationAndRotationWithinDestinationRange(TargetVector, TargetRotation);
-	}
-}
-
-function bool DoesAnAvailableBrickWithinDestinationRangeThatHasAnUnoccupiedSocketLocationExist()
-{
-	local DronesBrickKActor Brick;
-	local array<DronesBrickKActor> Bricks;
-	
-	Bricks = DronesGame(WorldInfo.Game).Bricks;
-	
-	//`Log("In function DoesAnAvailableBrickWithinDestinationRangeThatHasAnUnoccupiedSocketLocationExist");
-	if ( DoesAnAvailableBrickWithinDestinationRangeExist() )
-	{
-		foreach Bricks(Brick)
-		{
-			if( Brick.Availability == AVAIL_Available )
-			{
-				if( IsVectorWithinDestinationRange(Brick.Location) )
-				{
-					//`Log("Drone "$Pawn$" In function DoesAnAvailableBrickWithinDestinationRangeThatHasAnUnoccupiedSocketLocationExist, running through foreach brick, and checking to see if there is one with an unoccupied socket location");
-					// if this brick has a socket with an occupied location that is above ground
-					if( IsThereAnUnoccupiedSocketOnBrick(Brick) )
-					{
-						return TRUE;
-					}
-				}
-			}
-		}
-	}
-
-	return FALSE;
-}
-
-function DronesBrickKActor GetRandomAvailableBrickWithinDestinationRangeThatHasAnUnoccupiedSocketLocation(int RecursionDepth)
-{
-	local DronesBrickKActor Brick;
-	local array<DronesBrickKActor> Bricks;
-	
-	Bricks = DronesGame(WorldInfo.Game).Bricks;
-	if( RecursionDepth > 50)
-	{
-		foreach Bricks(Brick)
-		{
-			if( Brick.Availability == AVAIL_Available )
-			{
-				//`Log("Drone "$Pawn$" in function GetRandomAvailableBrickWithinDestinationRangeThatHasAnUnoccupiedSocketLocation, going through foreach brick "$AvailableBrick$" checking to see if there is one with an unoccupied socket location");
-				if( IsThereAnUnoccupiedSocketOnBrick(Brick) )
-				{
-					return Brick;
-				}
-			}
-		}
-	}
-	else
-	{
-		Brick = GetRandomAvailableBrickWithinDestinationRange(0);
-		if( !IsThereAnUnoccupiedSocketOnBrick(Brick) )
-		{
-			Brick = GetRandomAvailableBrickWithinDestinationRangeThatHasAnUnoccupiedSocketLocation(RecursionDepth);
-		}
-		return Brick;
-	}
-}
-
-function bool DoesAnAvailableBrickWithinDestinationRangeExist()
-{
-	local DronesBrickKActor TempBrick;
-	local array<DronesBrickKActor> Bricks;
-	
-	//`Log("In function DoesAnAvailableBrickWithinDestinationRangeExist");
-	Bricks = DronesGame(WorldInfo.Game).Bricks;
-	
-	foreach Bricks(TempBrick)
-	{
-		if( TempBrick.Availability == AVAIL_Available)
-		{
-			if(IsVectorWithinDestinationRange(TempBrick.Location))
-			{
-				//`Log("Going to return true, that a brick within destination range exists");
-				return TRUE;
-			}
-		}
-	}
-	//`Log("Going to return false, that a brick within destination range does NOT exist");
-	return FALSE;
-}
-
-function DronesBrickKActor GetRandomAvailableBrickWithinDestinationRange(int RecursionDepth)
-{
-	local int BrickIndex;
-	local DronesBrickKActor TempBrick;
-	local array<DronesBrickKActor> Bricks;
-	local int i;
-	local bool bFound;
-
-	bFound = FALSE;
-	RecursionDepth += 1;
-	Bricks = DronesGame(WorldInfo.Game).Bricks;
-	
-	//`Log("Drone: "$Pawn$" Before doing anything, RecursionDepth: "$RecursionDepth);
-	if (RecursionDepth < 50)
-	{
-		//`Log("RecursionDepth less than 50");
-		BrickIndex = RandRange(0,Bricks.Length-1);
-		TempBrick = Bricks[BrickIndex];
-		//`Log("Got a new brick from the AvailableBricks array. TempBrick: "$TempBrick);
-		if(!IsVectorWithinDestinationRange(TempBrick.Location))
-		{
-			//`Log("But that brick is out of destination range, so I'm going to do a recursive call to this function");
-			TempBrick = GetRandomAvailableBrickWithinDestinationRange(RecursionDepth);
-			//`Log("Returned out of recursive call");
-		}
-	}
-	else
-	{
-		//`Log("RecursionDepth greater than 50");
-		for (i=0; (i<Bricks.Length) && !bFound; i++)
-		{
-			TempBrick = Bricks[i];
-			//`Log("Got a new brick from AvailableBricks aray: "$TempBrick);
-			if(IsVectorWithinDestinationRange(TempBrick.Location))
-			{
-				bFound=TRUE;
-			}
-		}
-	}
-
-	//`Log("Returning TempBrick "$TempBrick);
-	return TempBrick;
-	
-}
-
-function bool IsVectorWithinDestinationRange(vector InVector)
-{
-	local bool bXWithinRange, bYWithinRange, bZWithinRange;
-	bXWithinRange = FALSE; bYWithinRange = FALSE; bZWithinRange = FALSE;
-	
-	if(	(InVector.X > (DestinationRangeCenter.X-(DestinationRangeSize.X/2))) && (InVector.X < (DestinationRangeCenter.X+(DestinationRangeSize.X/2))) )
-	{
-		bXWithinRange = TRUE;
-	}
-	if(	(InVector.Y > (DestinationRangeCenter.Y-(DestinationRangeSize.Y/2))) && (InVector.Y < (DestinationRangeCenter.Y+(DestinationRangeSize.Y/2))) )
-	{
-		bYWithinRange = TRUE;
-	}
-	if(	(InVector.Z > (DestinationRangeCenter.Z-(DestinationRangeSize.Z/2))) && (InVector.Z < (DestinationRangeCenter.Z+(DestinationRangeSize.Z/2))) )
-	{
-	
-		bZWithinRange = TRUE;
-	}
-	
-	if (bXWithinRange && bYWithinRange && bZWithinRange)
-	{
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
-	}
-}
-
-function bool IsThereAnUnoccupiedSocketOnBrick(DronesBrickKActor InBrick)
-{
-	local SkeletalMeshComponent ThisSkeletalMeshComponent;
-	local vector SocketLocation;
-	local int i;
-	local bool bIsThereAnUnoccupiedSocketLocation;
-	
-	bIsThereAnUnoccupiedSocketLocation = FALSE;
-	
-	foreach InBrick.ComponentList(class'SkeletalMeshComponent', ThisSkeletalMeshComponent)
-	{
-		for (i=1; i<7 && !bIsThereAnUnoccupiedSocketLocation; i++)
-		{
-			SocketLocation = GetSocketWorldLocationFromNumberAndComponent(i, ThisSkeletalMeshComponent);
-			
-			//`Log("Drone "$Pawn$" in function IsThereAnUnoccupiedSocketOnBrick with InBrick "$InBrick$" i "$i$" SocketLocation.Z "$SocketLocation.Z);
-			if( SocketLocation.Z > 1.5 )
-			{
-				//`Log("Drone "$Pawn$" in function IsThereAnUnoccupiedSocketOnBrick calling function IsBrickSizedLocationOccupied with InBrick "$InBrick);
-				if( !IsBrickSizedLocationOccupied(SocketLocation, InBrick.Rotation) )
-				{
-					//`Log("Drone "$Pawn$" in function IsThereAnUnoccupiedSocketOnBrick, and returning that the following socket location is unoccupied: "$i$" with InBrick "$InBrick);
-					bIsThereAnUnoccupiedSocketLocation = TRUE;
-				}
-			}
-		}
-	}
-	//`Log("in function IsThereAnUnoccupiedSocketOnBrick, with InBrick "$InBrick$" returning "$bIsThereAnUnoccupiedSocketLocation);
-	return bIsThereAnUnoccupiedSocketLocation;
-}
-
-function int GetRandomUnoccupiedSocketNumberFromBrick(DronesBrickKActor InBrick)
-{	
-	local SkeletalMeshComponent ThisSkeletalMeshComponent;
-	local Vector SocketLocation;
-	local int SocketNum;
-	
-	foreach InBrick.ComponentList(class'SkeletalMeshComponent', ThisSkeletalMeshComponent)
-	{
-		SocketNum = RandRange(1,7);
-		SocketLocation = GetSocketWorldLocationFromNumberAndComponent(SocketNum, ThisSkeletalMeshComponent);
-	}
-	
-	//`Log("Drone "$Pawn$" in function GetRandomUnoccupiedSocketNumberFromBrick calling function IsBrickSizedLocationOccupied with the Brick "$InBrick$" location of socket "$SocketNum$" which is at location "$SocketLocation);
-	// if the return vector would be below ground, or the return vector is occupied, get a new socket
-	if ( (SocketLocation.Z < -1.5) || IsBrickSizedLocationOccupied(SocketLocation, InBrick.Rotation) )
-	{
-		//`Log("Drone "$Pawn$" in function GetRandomUnoccupiedSocketNumberFromBrick doing a recursive call.  SocketLocation.Z "$SocketLocation.Z$" and i used socket "$SocketNum);
-		SocketNum = GetRandomUnoccupiedSocketNumberFromBrick(InBrick);
-	}
-	
-	return SocketNum;
-}
-
-function vector GetSocketWorldLocationFromNumberAndComponent(int SocketNum, SkeletalMeshComponent InSMComp)
-{
-	local vector SocketLocation;
-	switch( SocketNum )
-	{
-		case 1:
-			InSMComp.GetSocketWorldLocationAndRotation('Socket01', SocketLocation);
-			break;
-		case 2:
-			InSMComp.GetSocketWorldLocationAndRotation('Socket02', SocketLocation);
-			break;
-		case 3:
-			InSMComp.GetSocketWorldLocationAndRotation('Socket03', SocketLocation);
-			break;
-		case 4:
-			InSMComp.GetSocketWorldLocationAndRotation('Socket04', SocketLocation);
-			break;
-		case 5:
-			InSMComp.GetSocketWorldLocationAndRotation('Socket05', SocketLocation);
-			break;
-		case 6:
-			InSMComp.GetSocketWorldLocationAndRotation('Socket06', SocketLocation);
-			break;
-	}
-	return SocketLocation;
-}
-*/
-
-//==========================DELEGATES==========================================
-delegate int SortBricksRandomly(DronesBrickKActor BrickA, DronesBrickKActor BrickB)
-{
-	if(RandRange(0,1) < 0.5)
-	{
-		return -1;
-	}
-	else
-	{
-		return 1;
-	}
-}
-
 //==========================DEFAULT PROPERTIES==========================================
 DefaultProperties
 {	
+	bRemovingBrick=FALSE
 	bHoldingBrick=FALSE
 }
