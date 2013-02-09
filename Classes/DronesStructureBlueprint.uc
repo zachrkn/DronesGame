@@ -14,7 +14,8 @@ var vector BrickSize;
 function InitializeBrickWorldLocationsAndRotationsArrays()
 {
 	local int i;
-	
+//	`Log("in function InitializeBrickWorldLocationsAndRotationsArrays");
+//	`Log("BrickRelativeLocationsArray.Length " $BrickRelativeLocationsArray.Length);
 	for( i=0; i<BrickRelativeLocationsArray.Length; i++ )
 	{
 		BrickWorldLocationsArray[i] = StructureLocation + BrickRelativeLocationsArray[i];

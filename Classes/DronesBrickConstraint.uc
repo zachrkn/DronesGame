@@ -11,9 +11,9 @@ simulated event PostBeginPlay()
 	ConstraintSetup.Swing1LimitAngle=0;
 	ConstraintSetup.Swing2LimitAngle=0;
 	ConstraintSetup.bAngularBreakable=TRUE;
-	ConstraintSetup.AngularBreakThreshold=10;
+	ConstraintSetup.AngularBreakThreshold=1.8;
 	ConstraintSetup.bLinearBreakable=TRUE;
-	ConstraintSetup.LinearBreakThreshold=10;
+	ConstraintSetup.LinearBreakThreshold=1.8; // 1.8
 }
 
 //==========================DEFAULT PROPERTIES==========================================

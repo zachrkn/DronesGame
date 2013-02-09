@@ -32,6 +32,11 @@ simulated event PostBeginPlay()
 //	SetCollisionType(COLLIDE_NoCollision);
 }
 
+event Touch(Actor Other, PrimitiveComponent OtherComp, Object.Vector HitLocation, Object.Vector HitNormal)
+{
+	`Log("Pawn Touched this: " $Other);
+}
+
 //==========================FUNCTIONS==========================================
 /** Inherited from parent class
  *	Update pawn rotation
@@ -173,9 +178,12 @@ defaultproperties
 	
 	//Setting up the mesh and animset components
 	Begin Object Class=SkeletalMeshComponent Name=InitialSkeletalMesh
-		CastShadow=true
-		bCastDynamicShadow=true
-		bOwnerNoSee=false
+		//CastShadow=true
+		CastShadow=false
+		//bCastDynamicShadow=true
+		bCastDynamicShadow=false
+		//bOwnerNoSee=false
+		bOwnerNoSee=true
 		LightEnvironment=MyLightEnvironment
 		BlockRigidBody=true
 		CollideActors=true

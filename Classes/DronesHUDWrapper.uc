@@ -32,6 +32,7 @@ var bool bDrawMessageFedDrone;
 var int DrawMessageFedDroneDisplayCountDown;
 var bool bDrawDroneInfo;
 
+var Actor HitActor;
 //==========================EVENTS==========================================
 /** Inherited from parent class */
 simulated function PostBeginPlay()
@@ -49,6 +50,8 @@ simulated function PostBeginPlay()
 	
 	// Hides the GUI so it is not showing initially
 	HUDMovie.hideGUI();
+	
+//	HitActor = DronesGame(WorldInfo.Game).Drones[0];
 }
 
 event Tick( float Deltatime )
@@ -82,6 +85,11 @@ exec function ShowGUIToggle()
 }
 
 //==========================FUNCTIONS==========================================
+function DrawTraceHitActorMsg(Actor InActor)
+{
+	HitActor = InActor;
+}
+
 function DrawMessageNothingHit()
 {
 	bDrawMessageNothingHit = TRUE;
@@ -139,15 +147,19 @@ function DrawGameHud()
 event PostRender()
 {
 	local float HUDWidth, HUDHeight;
-	local DronesPlayerController ThisDronesPlayerController;
-	local DronesDrone DroneToDrawInfo;
-	local DronesDroneAIController DroneAIController;
-	local vector DestinationRangeSize;
-	local vector DestinationRangeCenter;
+//	local DronesPlayerController ThisDronesPlayerController;
+//	local DronesDrone DroneToDrawInfo;
+//	local DronesDroneAIController DroneAIController;
+//	local vector DestinationRangeSize;
+//	local vector DestinationRangeCenter;
 	
 	HUDWidth = HudMovieSize.GetFloat("width");
 	HUDHeight = HudMovieSize.GetFloat("height");
 
+	Canvas.SetDrawColor( 255, 0, 0, DrawMessageNothingHitDisplayCountDown );
+	Canvas.SetPos( 25, 550 );
+//	Canvas.DrawText( "Trace hit: " $HitActor$ " which is of class: " $HitActor.Class,,1.5,1.5 );
+/*
 	if(bDrawMessageNothingHit && DrawMessageNothingHitDisplayCountDown > 0)
 	{
 		Canvas.SetDrawColor( 255, 0, 0, DrawMessageNothingHitDisplayCountDown );
@@ -161,12 +173,13 @@ event PostRender()
 		Canvas.SetPos( 25, 990 );
 		Canvas.DrawText( "Fed drone!",,1.5,1.5 );
 	}
-	
+*/	
+/*
 	if(bDrawDroneInfo)
 	{
 		HUDWidth = HudMovieSize.GetFloat("width");
 		HUDHeight = HudMovieSize.GetFloat("height");
-	
+
 		ThisDronesPlayerController = DronesPlayerController(WorldInfo.Game.GetALocalPlayerController());
 		DroneToDrawInfo = ThisDronesPlayerController.LastTraceHitDrone;
 		DroneAIController = DronesDroneAIController(DroneToDrawInfo.Controller);
@@ -187,7 +200,7 @@ event PostRender()
 		Canvas.SetDrawColor( 255, 0, 0, 255 );
 		Canvas.SetPos( 1360, 990 );
 		Canvas.DrawText( "Number of Drones: "$DronesGame(WorldInfo.Game).Drones.Length,,1.5,1.5 );		
-	
+*/	
       // Set the crosshair position to the center of the screen
       Canvas.SetPos( (HUDWidth/2 - CrosshairTexture.SizeX/32), (HUDHeight/2 - CrosshairTexture.SizeY/32)); 
       // Set the crosshair color color

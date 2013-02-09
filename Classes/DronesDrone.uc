@@ -85,10 +85,12 @@ function Feed()
 function Kill()
 {
 	local DronesDroneAIController ThisController;
-
-	DronesGame(WorldInfo.Game).Drones.RemoveItem(Self);
+	
 	ThisController = DronesDroneAIController(Controller);
 	
+	ThisController.PickUpBrick.Availability = AVAIL_InStructure;
+
+	DronesGame(WorldInfo.Game).Drones.RemoveItem(Self);	
 	ThisController.Unpossess();
 	ThisController.Destroy();
 	Destroy();

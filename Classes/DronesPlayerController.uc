@@ -4,11 +4,15 @@ class DronesPlayerController extends PlayerController;
 //==========================VARIABLES==========================================
 var Actor LastTraceHit;
 var DronesDrone LastTraceHitDrone;
-var array<DronesBrickKActor> LastPhantomStructureBrickArray;
+var array<DronesBrickPhantom> LastPhantomStructureBrickArray;
 
 var DronesHUDWrapper HUDWrapper;
 
 var float LastOverallDroneSpeed;
+
+var bool bPause;
+
+var array<DronesBrickShell> OverlappedBricksLastTick;
 
 //==========================EVENTS==========================================
 /** Inherited from parent class
@@ -23,6 +27,8 @@ event PlayerTick( float DeltaTime )
 	local TraceHitInfo hitInfo;
 	local vector hitLoc, hitNorm, startTraceLoc, endTraceLoc;
 	local DronesDrone TraceHitDrone;
+	local DronesBrickKActor ThisBrick;
+	local int i;
 	
 	super.PlayerTick( DeltaTime );
 		
@@ -35,7 +41,9 @@ event PlayerTick( float DeltaTime )
 		ThisVectorLocation.Z = 50;
 		Pawn.SetLocation(ThisVectorLocation);
 	}
-		
+	
+	if(bPause)
+	{
 	cameraLocation = DronesPawn(Pawn).FinalCameraLocation;
 	cameraRotation = DronesPawn(Pawn).FinalCameraRotation;
 	endTraceLoc = cameraLocation + normal(vector(cameraRotation))*32768;
@@ -75,6 +83,20 @@ event PlayerTick( float DeltaTime )
 		LastTraceHitDrone = TraceHitDrone;
 	}
 	LastTraceHit = traceHit;
+	} // end bpause
+
+	foreach OverlappingActors (class'DronesBrickKActor', ThisBrick, 500, Pawn.Location, TRUE)
+	{
+		ThisBrick.BrickParentShell.GainCollision();
+		ThisBrick.SetPhysics(PHYS_RigidBody);
+	/*
+		if( OverlappedBricksLastTick.Find(ThisBrick.BrickParentShell) > 0 )
+		{
+			OverlappedBricksLastTick.AddItem(ThisBrick.BrickParentShell);	
+			ThisBrick.BrickParentShell.DestroySMBrickAndSpawnKBrick();	
+		}
+	*/
+	}
 
 }
 
@@ -83,20 +105,22 @@ function BuildPhantomStructure( DronesStructureBlueprint Blueprint )
 	local int i;
 	local vector v;
 	local rotator r;
-	local DronesBrickKActor NewPhantomBrick;
-	local StaticMeshComponent ThisStaticMeshComponent;
-	local MaterialInstanceConstant ThisMaterialInstanceConstant;
-	local float CurrentOpacity;
+	local DronesBrickPhantom NewPhantomBrick;
+//	local StaticMeshComponent ThisStaticMeshComponent;
+//	local MaterialInstanceConstant ThisMaterialInstanceConstant;
+//	local float CurrentOpacity;
 	
 	for( i=0; i<Blueprint.BrickWorldLocationsArray.Length; i++)
 	{
 		v = Blueprint.BrickWorldLocationsArray[i];
 		r = Blueprint.BrickWorldRotationsArray[i];
-		NewPhantomBrick = Spawn(class'DronesBrickKActor',,,v,r,,FALSE);
+		NewPhantomBrick = Spawn(class'DronesBrickPhantom',,,v,r,,FALSE);
+/* This is now done in PostBeginPlay of DronesBrickPhantom class
 		NewPhantomBrick.LoseCollision();
 		NewPhantomBrick.SetPhysics(PHYS_None);
 		
 		// make them translucent
+
 		foreach NewPhantomBrick.ComponentList(class'StaticMeshComponent', ThisStaticMeshComponent)
 		{
 			ThisMaterialInstanceConstant = ThisStaticMeshComponent.CreateAndSetMaterialInstanceConstant(0);
@@ -104,6 +128,7 @@ function BuildPhantomStructure( DronesStructureBlueprint Blueprint )
 		ThisMaterialInstanceConstant.GetScalarParameterValue('Opacity', CurrentOpacity);
 		ThisMaterialInstanceConstant.SetScalarParameterValue('Opacity',0.8F);
 		ThisMaterialInstanceConstant.GetScalarParameterValue('Opacity', CurrentOpacity);
+*/
 		
 		LastPhantomStructureBrickArray.AddItem(NewPhantomBrick);
 	}
@@ -111,7 +136,7 @@ function BuildPhantomStructure( DronesStructureBlueprint Blueprint )
 
 function DestroyPhantomStructure( )
 {
-	local DronesBrickKActor Brick;
+	local DronesBrickPhantom Brick;
 	foreach LastPhantomStructureBrickArray( Brick )
 	{
 		Brick.Destroy();
@@ -120,6 +145,21 @@ function DestroyPhantomStructure( )
 
  
 //==========================EXECS==========================================
+exec function ResetBricks()
+{
+	DronesGame(WorldInfo.Game).ResetBricksIndex = 0;
+	DronesGame(WorldInfo.Game).bResetBricks = TRUE;
+}
+exec function StopResettingBricks()
+{
+	DronesGame(WorldInfo.Game).bResetBricks = FALSE;
+}
+
+exec function ResetDrones()
+{
+	DronesGame(WorldInfo.Game).ResetDrones();
+}
+/*
 exec function StartFire( optional Byte FireModeNum )
 {
 	local vector cameraLocation;
@@ -138,6 +178,7 @@ exec function StartFire( optional Byte FireModeNum )
 	
 	if(traceHit != none)
 	{
+		HUDWrapper.DrawTraceHitActorMsg(traceHit);
 		if(traceHit.class.name == 'DronesDrone')
 		{
 			DronesDrone(traceHit).Feed();
@@ -153,7 +194,8 @@ exec function StartFire( optional Byte FireModeNum )
 		HUDWrapper.DrawMessageNothingHit();
 	}
 }
-
+*/
+/*
 exec function StartAltFire( optional Byte FireModeNum )
 {
 	local vector cameraLocation;
@@ -194,15 +236,21 @@ exec function StartAltFire( optional Byte FireModeNum )
 	{
 	}
 }
-
+*/
 exec function ShowMenu()
 {
-   ConsoleCommand("Quit"); // call the quit command to quit.
+   //ConsoleCommand("Quit"); // call the quit command to quit.
+   	DronesGame(WorldInfo.Game).Reset();
+	WorldInfo.Reset();
 }
 
 exec function Use()
 {
 	//ConsoleCommand("open DronesLandscape01");
+//	`Log("In USE exec function");
+	DronesGame(WorldInfo.Game).Reset();
+	WorldInfo.Reset();
+	ConsoleCommand("RestartLevel");
 }
 
 exec function PauseDrones()
@@ -210,7 +258,8 @@ exec function PauseDrones()
 	local DronesDrone ThisDrone;
 	local DronesDroneAIController DroneController;
 	
-	`Log("In exec PauseDrones");
+//	`Log("In exec PauseDrones");
+	bPause = TRUE;
 	
 	foreach AllActors(class'DronesDrone', ThisDrone)
 	{
@@ -225,7 +274,8 @@ exec function UnpauseDrones()
 	local DronesDrone ThisDrone;
 	local DronesDroneAIController DroneController;
 
-	`Log("In exec UnpauseDrones");
+	bPause = FALSE;
+//	`Log("In exec UnpauseDrones");
 	
 	foreach AllActors(class'DronesDrone', ThisDrone)
 	{
@@ -234,12 +284,12 @@ exec function UnpauseDrones()
 		DroneController.PopState();
 	}
 }
-
+/*
 exec function PrevWeapon()
 {
-	if( DronesGame(WorldInfo.Game).OverallDroneSpeed < 100)
+	if( DronesGame(WorldInfo.Game).OverallDroneSpeed < 200)
 	{
-		DronesGame(WorldInfo.Game).OverallDroneSpeed += 0.5;
+		DronesGame(WorldInfo.Game).OverallDroneSpeed += 2;
 	}
 }
 
@@ -247,10 +297,10 @@ exec function NextWeapon()
 {
 	if( DronesGame(WorldInfo.Game).OverallDroneSpeed > 0.0)
 	{
-		DronesGame(WorldInfo.Game).OverallDroneSpeed -= 0.5;
+		DronesGame(WorldInfo.Game).OverallDroneSpeed -= 2;
 	}
 }
-
+*/
 //==========================STATES==========================================
 
 
@@ -290,6 +340,7 @@ function UpdateRotation( float DeltaTime )
 //==========================DEFAULT PROPERTIES==========================================
 DefaultProperties
 {
+	bPause=FALSE
 	LastTraceHit=None
 	LastTraceHitDrone=None
 }
