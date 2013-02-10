@@ -175,7 +175,7 @@ state PlaceBrick
 	
 Begin:
 }
-
+/*
 state GetBrickToRemove
 {
 	local int i;
@@ -250,7 +250,7 @@ state PlaceBrickAtRemovalLocation
 	
 Begin:
 }
-
+*/
 state Mate
 {	
 	event Tick (float DeltaTime)

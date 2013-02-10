@@ -133,7 +133,10 @@ DefaultProperties
 
 	Begin Object Name=StaticMeshComponent0
         StaticMesh=DronesPackage.Meshes.Brick_large_mesh
-
+		CastShadow=TRUE
+		bCastDynamicShadow=TRUE
+		bUsePrecomputedShadows=FALSE
+		MaxDrawDistance=0
 		BlockRigidBody=TRUE
 		CollideActors=TRUE
 		BlockActors=TRUE
@@ -141,15 +144,14 @@ DefaultProperties
 		ScriptRigidBodyCollisionThreshold=0.0001
 		BlockZeroExtent=TRUE
 		BlockNonZeroExtent=TRUE
-//		RBChannel=RBCC_Untitled2
-//		RBCollideWithChannels=(Default=TRUE, GameplayPhysics=FALSE, Untitled1=FALSE, Untitled2=TRUE)
-		MaxDrawDistance=0
+		//RBChannel=RBCC_Untitled2
+		RBChannel=RBCC_Default
+		RBCollideWithChannels=(Default=TRUE, GameplayPhysics=TRUE, Untitled1=FALSE, Untitled2=TRUE)
+
 		Materials[0]=MaterialInstanceConstant'DronesPackage.Materials.BrickMaterialInstanceConstant';
     End Object
 
 	Begin Object Class=SkeletalMeshComponent Name=InitialSkeletalMesh
-		CastShadow=FALSE
-		bCastDynamicShadow=FALSE
 		bOwnerNoSee=FALSE
 		BlockRigidBody=FALSE
 		CollideActors=FALSE

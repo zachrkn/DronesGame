@@ -12,9 +12,19 @@ var float LastOverallDroneSpeed;
 
 var bool bPause;
 
-var array<DronesBrickShell> OverlappedBricksLastTick;
-
+var Actor Sphere;
 //==========================EVENTS==========================================
+event simulated PostBeginPlay()
+{	
+/*
+	super.PostBeginPlay();
+	Sphere = Spawn(class'DronesSphereOfInfluence',,,Pawn.Location,Pawn.Rotation);
+	Sphere.SetBase(Pawn);
+	//Sphere.SetHardAttach(TRUE);
+	Sphere.SetPhysics(PHYS_Interpolating);
+*/
+}
+
 /** Inherited from parent class
  *  Calls the HUDWrapper's SetMouseCoordinates function every tick, which in turns moves the mouse in the GUI.
  *  If I find an event that happens every tick in the HUD class, this wouldn't have to be here */
@@ -27,7 +37,9 @@ event PlayerTick( float DeltaTime )
 	local TraceHitInfo hitInfo;
 	local vector hitLoc, hitNorm, startTraceLoc, endTraceLoc;
 	local DronesDrone TraceHitDrone;
-	local DronesBrickKActor ThisBrick;
+	local DronesBrickSMActor ThisSMBrick;
+	local DronesBrickKActor ThisKBrick;
+	local array<DronesBrickKActor> OverlappedKBricks;
 	local int i;
 	
 	super.PlayerTick( DeltaTime );
@@ -85,63 +97,29 @@ event PlayerTick( float DeltaTime )
 	LastTraceHit = traceHit;
 	} // end bpause
 
-	foreach OverlappingActors (class'DronesBrickKActor', ThisBrick, 500, Pawn.Location, TRUE)
+	foreach OverlappingActors(class'DronesBrickSMActor', ThisSMBrick, 500, Pawn.Location, TRUE)
 	{
-		ThisBrick.BrickParentShell.GainCollision();
-		ThisBrick.SetPhysics(PHYS_RigidBody);
-	/*
-		if( OverlappedBricksLastTick.Find(ThisBrick.BrickParentShell) > 0 )
-		{
-			OverlappedBricksLastTick.AddItem(ThisBrick.BrickParentShell);	
-			ThisBrick.BrickParentShell.DestroySMBrickAndSpawnKBrick();	
-		}
-	*/
+//		ThisBrick.BrickParentShell.GainCollision();
+//		ThisBrick.SetPhysics(PHYS_RigidBody);
+		`Log("Overlapping SM Brick: " $ThisSMBrick$ " so going to destroy it and spawn a kbrick");
+		ThisSMBrick.BrickParentShell.DestroySMBrickAndSpawnKBrick();	
 	}
 
-}
-
-function BuildPhantomStructure( DronesStructureBlueprint Blueprint )
-{	
-	local int i;
-	local vector v;
-	local rotator r;
-	local DronesBrickPhantom NewPhantomBrick;
-//	local StaticMeshComponent ThisStaticMeshComponent;
-//	local MaterialInstanceConstant ThisMaterialInstanceConstant;
-//	local float CurrentOpacity;
+	foreach OverlappingActors(class'DronesBrickKActor', ThisKBrick, 500, Pawn.Location, TRUE)
+	{
+		OverlappedKBricks.AddItem(ThisKBrick);
+	}
 	
-	for( i=0; i<Blueprint.BrickWorldLocationsArray.Length; i++)
+	foreach AllActors(class'DronesBrickKActor', ThisKBrick)
 	{
-		v = Blueprint.BrickWorldLocationsArray[i];
-		r = Blueprint.BrickWorldRotationsArray[i];
-		NewPhantomBrick = Spawn(class'DronesBrickPhantom',,,v,r,,FALSE);
-/* This is now done in PostBeginPlay of DronesBrickPhantom class
-		NewPhantomBrick.LoseCollision();
-		NewPhantomBrick.SetPhysics(PHYS_None);
-		
-		// make them translucent
-
-		foreach NewPhantomBrick.ComponentList(class'StaticMeshComponent', ThisStaticMeshComponent)
+		if( OverlappedKBricks.Find( ThisKBrick ) < 0 )
 		{
-			ThisMaterialInstanceConstant = ThisStaticMeshComponent.CreateAndSetMaterialInstanceConstant(0);
+			ThisKBrick.BrickParentShell.DestroyKBrickAndSpawnSMBrick();
 		}
-		ThisMaterialInstanceConstant.GetScalarParameterValue('Opacity', CurrentOpacity);
-		ThisMaterialInstanceConstant.SetScalarParameterValue('Opacity',0.8F);
-		ThisMaterialInstanceConstant.GetScalarParameterValue('Opacity', CurrentOpacity);
-*/
-		
-		LastPhantomStructureBrickArray.AddItem(NewPhantomBrick);
 	}
+
 }
 
-function DestroyPhantomStructure( )
-{
-	local DronesBrickPhantom Brick;
-	foreach LastPhantomStructureBrickArray( Brick )
-	{
-		Brick.Destroy();
-	}
-}
 
  
 //==========================EXECS==========================================
@@ -305,6 +283,33 @@ exec function NextWeapon()
 
 
 //==========================FUNCTIONS==========================================
+function BuildPhantomStructure( DronesStructureBlueprint Blueprint )
+{	
+	local int i;
+	local vector v;
+	local rotator r;
+	local DronesBrickPhantom NewPhantomBrick;
+//	local StaticMeshComponent ThisStaticMeshComponent;
+//	local MaterialInstanceConstant ThisMaterialInstanceConstant;
+//	local float CurrentOpacity;
+	
+	for( i=0; i<Blueprint.BrickWorldLocationsArray.Length; i++)
+	{
+		v = Blueprint.BrickWorldLocationsArray[i];
+		r = Blueprint.BrickWorldRotationsArray[i];
+		NewPhantomBrick = Spawn(class'DronesBrickPhantom',,,v,r,,FALSE);		
+		LastPhantomStructureBrickArray.AddItem(NewPhantomBrick);
+	}
+}
+
+function DestroyPhantomStructure( )
+{
+	local DronesBrickPhantom Brick;
+	foreach LastPhantomStructureBrickArray( Brick )
+	{
+		Brick.Destroy();
+	}
+}
 
 
 /** Inherited from parent class

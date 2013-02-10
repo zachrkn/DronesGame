@@ -234,6 +234,7 @@ function SpawnBricks()
 		r.Pitch = 0;
 		r.Yaw = 0;
 		r.Roll = 0;
+		//NewBrick = New class'DronesBrickShell';
 		NewBrick = Spawn(class'DronesBrickShell',,,v,r,,);
 		Bricks.AddItem(NewBrick);
 	}
@@ -351,7 +352,7 @@ static event class<GameInfo> SetGameType(string MapName, string Options, string 
 //==========================DEFAULT PROPERTIES==========================================
 defaultproperties
 {
-	NumDrones = 25
+	NumDrones = 30
 	OverallDroneSpeed = 100
 	NumBricks = 5000
 	DistanceBetweenBricks = 200

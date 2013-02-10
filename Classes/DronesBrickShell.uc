@@ -38,13 +38,20 @@ var rotator OriginalRotation;
 //==========================EVENTS==========================================
 simulated event PostBeginPlay()
 {
-	Brick = Spawn(class'DronesBrickSMActor',,,Location,Rotation,,);
-	DronesBrickSMActor(Brick).SetBrickParentShell(Self);
+/*
+	KBrick = Spawn(class'DronesBrickKActor',,,Location,Rotation,,);
+//	DronesBrickKActor(KBrick).SetBrickParentShell(Self);
 //	DronesBrickSMActor(Brick).TimeToNextPhysCheck = RandRange(50, 100) / 10.0;
 //	SetMaterial();
-	SetBaseToSelf();
+//	SetBaseToSelf();
+	KBrick.SetPhysics(PHYS_None);
+	LoseCollision();
+*/
+	Brick = Spawn(class'DronesBrickSMActor',,,Location,Rotation,,);
+	DronesBrickSMActor(Brick).SetBrickParentShell(Self);
 	Brick.SetPhysics(PHYS_None);
 	GainCollision();
+	
 	OriginalLocation = Location;
 	OriginalRotation = Rotation;
 
@@ -134,28 +141,39 @@ function SetMaterial()
 
 function DestroyKBrickAndSpawnSMBrick()
 {
+	local vector v;
+	local rotator r;
+	v = Brick.Location;
+	r = Brick.Rotation;
+	
 	Brick.Destroy();
 	
-	Brick = Spawn(class'DronesBrickSMActor',,,Brick.Location,Brick.Rotation,,FALSE);
+	Brick = Spawn(class'DronesBrickSMActor',,,v,r,,FALSE);
 	
 	DronesBrickSMActor(Brick).SetBrickParentShell(Self);
 
 //	CreateConstraintWithAllTouchingBricks();
 		
-	DronesBrickSMActor(Brick).BrickParentShell.SetMaterial();
+//	DronesBrickSMActor(Brick).BrickParentShell.SetMaterial();
 }
 
 function DestroySMBrickAndSpawnKBrick()
 {
+	local vector v;
+	local rotator r;
+	v = Brick.Location;
+	r = Brick.Rotation;
+	
 	Brick.Destroy();
 	
-	Brick = Spawn(class'DronesBrickKActor',,,Brick.Location,Brick.Rotation,,FALSE);
+	Brick = Spawn(class'DronesBrickKActor',,,v,r,,FALSE);
+
 		
 	DronesBrickKActor(Brick).SetBrickParentShell(Self);
 	
 //	CreateConstraintWithAllTouchingBricks();
 	
-	DronesBrickKActor(Brick).BrickParentShell.SetMaterial();
+//	DronesBrickKActor(Brick).BrickParentShell.SetMaterial();
 }
 
 function ToggleHighlightOn()
@@ -235,7 +253,7 @@ function ResetPositionAndRotationToOriginal()
 	Brick.SetRotation(OriginalRotation);
 }
 		
-			
+/*			
 function CreateConstraintWithBrick(DronesBrickShell OtherBrick)
 {
 	local DronesBrickConstraint NewConstraint;
@@ -268,7 +286,7 @@ function CreateConstraintWithAllTouchingBricks()
 		CreateConstraintWithBrick(TouchingBrick);
 	}
 }
-
+*/
 /*
 function RemoveConstraintsFromSelfAndThoseConstrainedTo()
 {
@@ -282,7 +300,7 @@ function RemoveConstraintsFromSelfAndThoseConstrainedTo()
 	}
 }
 */
-
+/*
 function TraceTouchingBricks(vector StartTraceVectorOffset, vector EndTraceVectorOffset, vector InBrickLocation, rotator InBrickRotation, out array<DronesBrickShell> TouchingBricks)
 {
 	local vector StartTraceLoc, EndTraceLoc, HitLoc, HitNorm, TraceExtent;
@@ -329,13 +347,14 @@ function TraceTouchingBricks(vector StartTraceVectorOffset, vector EndTraceVecto
 		}
 	}
 }
-
+*/
 
 //==========================DEFAULT PROPERTIES==========================================
 DefaultProperties
 {	
 	BrickType=BRICKTYPE_KActor
-	
+	bHidden=TRUE
+/*
 	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent0
         StaticMesh=DronesPackage.Meshes.Brick_large_mesh
 
@@ -353,5 +372,6 @@ DefaultProperties
 	Components.Add(StaticMeshComponent0)
 	
 	CollisionComponent=StaticMeshComponent0
+*/
 }
 
