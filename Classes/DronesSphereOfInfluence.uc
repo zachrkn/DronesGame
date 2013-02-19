@@ -1,6 +1,5 @@
 //==========================CLASS DECLARATION==================================
 class DronesSphereOfInfluence extends DynamicSMActor
-
     placeable;
 	
 //==========================VARIABLES==========================================

@@ -26,7 +26,7 @@ function SetBrickRelativeLocationsArray()
 	local int lean;
 
 		currentAdd = 0;
-		levels = (int(RandRange(2,5)) * 2); //They should be even, so that it's a perfect cube
+		levels = (int(RandRange(2,4)) * 2); //They should be even, so that it's a perfect cube
 		lean = RandRange(-1,1);
 
 		for(index = 0; index < levels; index++){

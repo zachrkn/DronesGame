@@ -26,7 +26,7 @@ function InitializeBrickWorldLocationsAndRotationsArrays()
 //==========================DEFAULT PROPERTIES==========================================
 DefaultProperties
 {
-	StructureLocation=(x=0,y=0,z=20)
+	StructureLocation=(x=0,y=0,z=18.76)
 	StructureRotation=(pitch=0,yaw=0,roll=0)
 	BrickSize=(x=40,y=80,z=40)
 }

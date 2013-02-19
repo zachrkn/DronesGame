@@ -36,6 +36,7 @@ auto state Idle
 	event Tick (float DeltaTime)
     {
 		EveryTickStuff();
+		PickUpBrick.SetPositionAndRotation(DropLocation, DropRotation);
 /*
 		`Log("in Idle state Tick");
 		// find out if there are any bricks occupying blueprint space that are not exactly aligned
@@ -51,12 +52,11 @@ auto state Idle
 
 			if(DoesAnAvailableBrickExistInArray( DronesGame(WorldInfo.Game).Bricks ))
 			{			
-				//PickUpBrick = GetClosestAvailableBrickInArray( DronesGame(WorldInfo.Game).Bricks, Pawn.Location );
-				PickUpBrick = GetClosestAvailableBrickUsingPools(Pawn.Location);
+				PickUpBrick = GetClosestAvailableBrick( Pawn.Location );
 			}
 			else
 			{
-				PickUpBrick = GetRandomInStructureBrick( DronesGame(WorldInfo.Game).Bricks );
+				PickUpBrick = GetClosestInStructureBrick( Pawn.Location );
 			}
 			
 			PickUpBrick.Availability = AVAIL_Targetted;
@@ -64,6 +64,7 @@ auto state Idle
 		}
 		else
 		{
+			GotoState('Die');
 			Foreach AllActors(class'DronesDrone', Drone)
 			{
 				//`Log("I am: "$Pawn$" and Im looking at Drone: "$Drone);
@@ -73,7 +74,7 @@ auto state Idle
 					PotentialMate = Drone;
 				}
 			}
-			GotoState('Mate');
+			//GotoState('Mate');
 		}
 		
     }
@@ -101,7 +102,8 @@ state GetBrick
 			//`Log("Drone: " $Self$ " is at brick");
 			//`Log("In state GetBrick, checking to see if there is an empty blueprint location, and to set DropLocation");
 			if( GetFirstEmptyBlueprintLocationAndRotation(StructureBlueprint, DropLocation, DropRotation) )
-			{			
+			{		
+				///*
 				//`Log("Drone: " $Self$ " Got an empty blueprint location: " $DropLocation);
 				PickUpBrick.SetBaseToDrone(DronesDrone(Pawn));
 				// set physics to interpolating so the brick will move along with the drone correctly
@@ -113,6 +115,19 @@ state GetBrick
 				bHoldingBrick = TRUE;
 				
 				GotoState('PlaceBrick');
+				//*/
+				/*
+				PickUpBrick.SetBaseToDrone(DronesDrone(Pawn));
+				PickUpBrick.Brick.SetPhysics(PHYS_Interpolating);
+				PickUpBrick.LoseCollision();
+				
+				PickUpBrick.SetBaseToSelf();
+				PickUpBrick.Brick.SetPhysics(PHYS_None);
+				PickUpBrick.GainCollision();
+				
+				PickUpBrick.SetPositionAndRotation(DropLocation, DropRotation);
+				GotoState('Idle');
+				*/
 			}
 			else
 			{
@@ -148,6 +163,7 @@ state PlaceBrick
 			}
 			else
 			{
+
 				PickUpBrick.SetBaseToSelf();
 				PickUpBrick.Brick.SetPhysics(PHYS_None);
 				//`Log("Now going to make brick lose its momentum");
@@ -156,11 +172,13 @@ state PlaceBrick
 				PickUpBrick.GainCollision();
 				//`Log("Now going to set brick's position and rotation");
 				PickUpBrick.SetPositionAndRotation(DropLocation, DropRotation);
+
 				
 				//`Log("Dropped PickUpBrick.  PickUpBrick.Location: "$PickUpBrick.Location$" and PickUpBrick.Rotation: "$PickUpBrick.Rotation);
 																
 				// change the brick's availablity status to instructure
 				PickUpBrick.Availability = AVAIL_InStructure;
+				PickUpBrick.StructureIndex = StructureIndex;
 				
 				bHoldingBrick = FALSE;
 													
@@ -310,24 +328,18 @@ function bool GetFirstEmptyBlueprintLocationAndRotation(DronesStructureBlueprint
 	local rotator CurrentRot;
 	local int i;
 	
-//	InLoc = vect(100, 180, 100);
-//	return TRUE;
-
-//	`Log("Drone: " $Self$ " in function GetFirstEmptyBlueprintLocationAndRotation, going to loop through all the locations");
 	for (i=0; i<Blueprint.BrickWorldLocationsArray.Length; i++)
 	{
 		CurrentLoc = Blueprint.BrickWorldLocationsArray[i];
 		CurrentRot = Blueprint.BrickWorldRotationsArray[i];
-//		`Log("i = " $i$ " ... BlueprintLoc: " $CurrentLoc );
 		if( !IsBrickSizedLocationOccupied(CurrentLoc, CurrentRot) )
 		{
 			InLoc = CurrentLoc;
 			InRot = CurrentRot;
-//			`Log("First empty Blueprint Location: "$CurrentLoc$" and Rotation: "$CurrentRot);
 			return TRUE;
 		}
 	}
-	`Log("No empy blueprint locations");
+//	`Log("No empty blueprint locations");
 	return FALSE;
 }
 
@@ -472,97 +484,94 @@ function bool DoesAnAvailableBrickExistInArray(array<DronesBrickShell> Bricks)
 	return FALSE;
 }
 
-// NEEDS OPTIMIZATION - EVERY TIME IT DOES THIS, IT GOES THROUGH EVERY BRICK IN THE BRICKS ARRAY - it's a framerate killer with 10k bricks
-function DronesBrickShell GetClosestAvailableBrickInArray(array<DronesBrickShell> BrickArray, vector InLoc)
+function DronesBrickShell GetClosestAvailableBrick( vector InLoc )
 {
+	local array<DronesBrickShell> OverlappedBricks;
+	local DronesBrickSMActor ThisSMBrick;
+	local DronesBrickKActor ThisKBrick;
 	local DronesBrickShell CurrentBrick;
-	local float CurrentDistance;
 	local DronesBrickShell ClosestBrick;
+	local float CurrentDistance;
 	local float ClosestDistance;
-	ClosestDistance = 100000000000;
-/*	
-	foreach BrickArray(CurrentBrick)
-	{
-		if( CurrentBrick.Availability == AVAIL_Available )
-		{
-			return CurrentBrick;
-		}
-	}
-*/
+	local int SearchRadius;
+	local bool bBrickFound;
 
-	//`Log("Drone: " $Self$ " in function GetClosestAvailableBrickInArray");
-	foreach BrickArray(CurrentBrick)
+	bBrickFound = FALSE;
+	ClosestDistance = 100000000000;
+	SearchRadius = 50;
+
+	while( !bBrickFound)
 	{
-		if( CurrentBrick.Availability == AVAIL_Available)
+		foreach OverlappingActors(class'DronesBrickKActor', ThisKBrick, SearchRadius, InLoc, TRUE)
 		{
-			CurrentDistance = vSize(CurrentBrick.Location - InLoc);
-			if ( CurrentDistance < ClosestDistance )
+			OverlappedBricks.AddItem(ThisKBrick.BrickParentShell);
+		}
+		foreach OverlappingActors(class'DronesBrickSMActor', ThisSMBrick, SearchRadius, InLoc, TRUE)
+		{
+			OverlappedBricks.AddItem(ThisSMBrick.BrickParentShell);
+		}
+
+		foreach OverlappedBricks(CurrentBrick)
+		{
+			if( CurrentBrick.Availability == AVAIL_Available)
 			{
-				ClosestDistance = CurrentDistance;
-				ClosestBrick = CurrentBrick;
+				CurrentDistance = vSize(CurrentBrick.Location - InLoc);
+				if ( CurrentDistance < ClosestDistance )
+				{
+					ClosestDistance = CurrentDistance;
+					ClosestBrick = CurrentBrick;
+					bBrickFound = TRUE;
+				}
 			}
 		}
+		SearchRadius += SearchRadius * 2;
 	}
-	//`Log("ClosestBrick: " $ClosestBrick$ " at location: " $closestBrick.Location);
 	return ClosestBrick;
-
-	//`Log("Drone: " $Self$ " found the closest brick.  It is: " $ClosestBrick$ " and it's internal brick is: " $ClosestBrick.Brick);
-	
-//	`Log("The closest brick's availability is: " $ClosestBrick.Availability);
 }
 
-function DronesBrickShell GetClosestAvailableBrickUsingPools(vector InLoc)
+function DronesBrickShell GetClosestInStructureBrick( vector InLoc )
 {
-	local DronesBrickShell ClosestBrickInPool;
-	local bool bNoBrickInThatPoolAvailable;
-	if(InLoc.X > 0 )
+	local array<DronesBrickShell> OverlappedBricks;
+	local DronesBrickSMActor ThisSMBrick;
+	local DronesBrickKActor ThisKBrick;
+	local DronesBrickShell CurrentBrick;
+	local DronesBrickShell ClosestBrick;
+	local float CurrentDistance;
+	local float ClosestDistance;
+	local int SearchRadius;
+	local bool bBrickFound;
+
+	bBrickFound = FALSE;
+	ClosestDistance = 100000000000;
+	SearchRadius = 50;
+
+	while( !bBrickFound)
 	{
-		if( (InLoc.Y > 0) && DoesAnAvailableBrickExistInArray(DronesGame(WorldInfo.Game).BricksPP) )
+		foreach OverlappingActors(class'DronesBrickKActor', ThisKBrick, SearchRadius, InLoc, TRUE)
 		{
-			//`Log("DroneLoc is PP, so using that array");
-			ClosestBrickInPool = GetClosestAvailableBrickInArray(DronesGame(WorldInfo.Game).BricksPP, InLoc);
+			OverlappedBricks.AddItem(ThisKBrick.BrickParentShell);
 		}
-		else if( (InLoc.Y <= 0) && DoesAnAvailableBrickExistInArray(DronesGame(WorldInfo.Game).BricksPN) )
+		foreach OverlappingActors(class'DronesBrickSMActor', ThisSMBrick, SearchRadius, InLoc, TRUE)
 		{
-			//`Log("DroneLoc is PN, so using that array");
-			ClosestBrickInPool = GetClosestAvailableBrickInArray(DronesGame(WorldInfo.Game).BricksPN, InLoc);		
+			OverlappedBricks.AddItem(ThisSMBrick.BrickParentShell);
 		}
-		else
+
+		foreach OverlappedBricks(CurrentBrick)
 		{
-			bNoBrickInThatPoolAvailable = TRUE;
-		}
-	}
-	else
-	{
-		if( (InLoc.Y > 0) && DoesAnAvailableBrickExistInArray(DronesGame(WorldInfo.Game).BricksNP) )
-		{
-			//`Log("DroneLoc is NP, so using that array");
-			ClosestBrickInPool = GetClosestAvailableBrickInArray(DronesGame(WorldInfo.Game).BricksNP, InLoc);			
-		}
-		else if( (InLoc.Y <= 0) && DoesAnAvailableBrickExistInArray(DronesGame(WorldInfo.Game).BricksNN) )
-		{
-			//`Log("DroneLoc is NN, so using that array");
-			ClosestBrickInPool = GetClosestAvailableBrickInArray(DronesGame(WorldInfo.Game).BricksNN, InLoc);			
-		}
-		else
-		{
-			bNoBrickInThatPoolAvailable = TRUE;
-		}
-	}
-	
-	if( bNoBrickInThatPoolAvailable )
-	{
-		//`Log("in whatever pool i was drawing from, there were no available bricks!");
-		foreach DronesGame(WorldInfo.Game).Bricks( ClosestBrickInPool )
-		{
-			if( ClosestBrickInPool.Availability == AVAIL_Available )
+			if( CurrentBrick.Availability == AVAIL_InStructure && CurrentBrick.StructureIndex != StructureIndex )
 			{
-				return ClosestBrickInPool;
+				CurrentDistance = vSize(CurrentBrick.Location - InLoc);
+				if ( CurrentDistance < ClosestDistance )
+				{
+					ClosestDistance = CurrentDistance;
+					ClosestBrick = CurrentBrick;
+					bBrickFound = TRUE;
+				}
 			}
 		}
+		SearchRadius += SearchRadius * 2;
 	}
-	
-	return ClosestBrickInPool;
+	return ClosestBrick;
 }
 
 function DronesBrickShell GetRandomInStructureBrick(array<DronesBrickShell> BrickArray)
@@ -640,7 +649,11 @@ function bool ShouldSpawnNewDrone()
 function InitializeRandomBlueprint()
 {
 	local int rand;
-	rand = RandRange(0,9);
+	rand = Round(RandRange(0,8));
+	
+	StructureIndex = DronesGame(WorldInfo.Game).StructureIndeces.Length;
+	DronesGame(WorldInfo.Game).StructureIndeces.AddItem(StructureIndex);
+	
 	
 	switch( rand )
 	{

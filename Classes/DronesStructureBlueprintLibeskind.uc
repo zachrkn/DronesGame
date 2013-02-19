@@ -23,7 +23,7 @@ function SetBrickRelativeLocationsArray()
 	local int index3; //this setting up the variables at the top this gets old VERY quickly!
 	local int levels;
 
-		levels = RandRange(5,18);
+		levels = RandRange(3,8);
 		currentAdd = 0;
 
 		for(index = levels; index >= 0; index--){ //this should be counting down, so we build it from the bottom up...

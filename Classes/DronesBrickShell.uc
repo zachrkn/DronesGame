@@ -38,15 +38,6 @@ var rotator OriginalRotation;
 //==========================EVENTS==========================================
 simulated event PostBeginPlay()
 {
-/*
-	KBrick = Spawn(class'DronesBrickKActor',,,Location,Rotation,,);
-//	DronesBrickKActor(KBrick).SetBrickParentShell(Self);
-//	DronesBrickSMActor(Brick).TimeToNextPhysCheck = RandRange(50, 100) / 10.0;
-//	SetMaterial();
-//	SetBaseToSelf();
-	KBrick.SetPhysics(PHYS_None);
-	LoseCollision();
-*/
 	Brick = Spawn(class'DronesBrickSMActor',,,Location,Rotation,,);
 	DronesBrickSMActor(Brick).SetBrickParentShell(Self);
 	Brick.SetPhysics(PHYS_None);
@@ -62,7 +53,6 @@ simulated event PostBeginPlay()
 
 event Tick(float DeltaTime)
 {
-//	`Log("Tick!  BrickShell: " $Self$ " contains brick: " $Brick);
 	SetLocation(Brick.Location);
 	Super.Tick(DeltaTime);
 }
@@ -150,6 +140,8 @@ function DestroyKBrickAndSpawnSMBrick()
 	
 	Brick = Spawn(class'DronesBrickSMActor',,,v,r,,FALSE);
 	
+	SetPositionAndRotation(v, r);
+	
 	DronesBrickSMActor(Brick).SetBrickParentShell(Self);
 
 //	CreateConstraintWithAllTouchingBricks();
@@ -166,8 +158,11 @@ function DestroySMBrickAndSpawnKBrick()
 	
 	Brick.Destroy();
 	
+//	`Log("In function DestroySMBrickAndSpawnKBrick BrickShell: " $Self$ " contains brick: " $Brick);
+	
 	Brick = Spawn(class'DronesBrickKActor',,,v,r,,FALSE);
 
+	SetPositionAndRotation(v, r);
 		
 	DronesBrickKActor(Brick).SetBrickParentShell(Self);
 	
@@ -253,7 +248,7 @@ function ResetPositionAndRotationToOriginal()
 	Brick.SetRotation(OriginalRotation);
 }
 		
-/*			
+		
 function CreateConstraintWithBrick(DronesBrickShell OtherBrick)
 {
 	local DronesBrickConstraint NewConstraint;
@@ -286,7 +281,7 @@ function CreateConstraintWithAllTouchingBricks()
 		CreateConstraintWithBrick(TouchingBrick);
 	}
 }
-*/
+
 /*
 function RemoveConstraintsFromSelfAndThoseConstrainedTo()
 {
@@ -300,7 +295,7 @@ function RemoveConstraintsFromSelfAndThoseConstrainedTo()
 	}
 }
 */
-/*
+
 function TraceTouchingBricks(vector StartTraceVectorOffset, vector EndTraceVectorOffset, vector InBrickLocation, rotator InBrickRotation, out array<DronesBrickShell> TouchingBricks)
 {
 	local vector StartTraceLoc, EndTraceLoc, HitLoc, HitNorm, TraceExtent;
@@ -347,7 +342,7 @@ function TraceTouchingBricks(vector StartTraceVectorOffset, vector EndTraceVecto
 		}
 	}
 }
-*/
+
 
 //==========================DEFAULT PROPERTIES==========================================
 DefaultProperties

@@ -9,13 +9,12 @@ var int NumTicksVelAtZero;
 var DronesBrickShell BrickParentShell;
 
 //==========================EVENTS==========================================
-/*
+
 event RigidBodyCollision (PrimitiveComponent HitComponent, PrimitiveComponent OtherComponent, const out CollisionImpactData RigidCollisionData, int ContactIndex)
 {
 	super.RigidBodyCollision(HitComponent, OtherComponent, RigidCollisionData, ContactIndex);
-//	`Log("RBC! Brick: "$Self$" Location: "$Location$" OtherComponent: "$OtherComponent$ " OtherComponent.Owner: "$OtherComponent.Owner);
 }
-*/
+
 
 event Tick (float DeltaTime)
 {
@@ -147,7 +146,6 @@ DefaultProperties
 		//RBChannel=RBCC_Untitled2
 		RBChannel=RBCC_Default
 		RBCollideWithChannels=(Default=TRUE, GameplayPhysics=TRUE, Untitled1=FALSE, Untitled2=TRUE)
-
 		Materials[0]=MaterialInstanceConstant'DronesPackage.Materials.BrickMaterialInstanceConstant';
     End Object
 

@@ -9,26 +9,7 @@ class DronesGame extends SimpleGame;
 var array<DronesBrickShell> Bricks;
 var array<DronesDrone> Drones;
 
-var array<DronesBrickShell> BricksPP;
-var array<DronesBrickShell> BricksNP;
-var array<DronesBrickShell> BricksPN;
-var array<DronesBrickShell> BricksNN;
-var int TimeToNextBrickSort;
-/*
-struct yCoord
-{
-	var array<DronesBrickShell> Bricks;
-};
-
-struct xCoord
-{
-	var array<yCoord> yCoords;
-};
-
-
-
-var array<XCoord> SortedBricks;
-*/
+var array<int> StructureIndeces;
 
 var float OverallDroneSpeed;
 var float CurrentDroneSpeed;
@@ -77,34 +58,12 @@ event Tick ( float DeltaTime )
 		//ConsoleCommand("open DronesLandscape01");
 	}
 */
-	
-	if( TimeToNextBrickSort <= 0 )
-	{
-		SortBricksIntoPools();
-		TimeToNextBrickSort=15000;
-	}
-	TimeToNextBrickSort--;
 }
 
 /*
 event Tick ( float Deltatime)
 {
-	local DronesBrickKActor ThisDronesBrickKActor;
-	local int Index;
-	`Log(" ");
-	`Log("Presort");
-	foreach Bricks(ThisDronesBrickKActor, Index)
-	{
-		`Log("ThisDronesBrickKActor: "$ThisDronesBrickKActor$" at index: "$Index$" at location: "$ThisDronesBrickKActor.Location.X);
-	}
-	
-	Bricks.Sort(SortBricksRandomly);
-	
-	`Log("Postsort");
-	foreach Bricks(ThisDronesBrickKActor, Index)
-	{
-		`Log("ThisDronesBrickKActor: "$ThisDronesBrickKActor$" at index: "$Index$" at location: "$ThisDronesBrickKActor.Location.X);
-	}
+
 }
 */
 
@@ -222,7 +181,7 @@ function SpawnBricks()
 	local rotator r;
 	local vector v;
 	local int NumBricksSqrt;
-		
+
 	NumBricksSqrt = Round(Sqrt(NumBricks));
 	for( i=0; i<NumBricksSqrt; i++)
 	{
@@ -240,7 +199,6 @@ function SpawnBricks()
 	}
 	}
 
-	SortBricksIntoPools();
 }
 
 delegate int SortBricks(DronesBrickKActor BrickA, DronesBrickKActor BrickB)
@@ -268,55 +226,6 @@ while(Bricks.length > 0)
 // SortedBricks should now be a randomized Bricks
 }
 */
-
-function SortBricksIntoPools()
-{
-	local DronesBrickShell CurrentBrick;
-	local int i;
-	
-	for(i=0; i<BricksPP.Length; i++)
-	{
-		BricksPP.Remove(i, 1);
-	}
-	for(i=0; i<BricksNP.Length; i++)
-	{
-		BricksNP.Remove(i, 1);
-	}	
-	for(i=0; i<BricksPN.Length; i++)
-	{
-		BricksPN.Remove(i, 1);
-	}	
-	for(i=0; i<BricksNN.Length; i++)
-	{
-		BricksNN.Remove(i, 1);
-	}
-	
-	foreach Bricks(CurrentBrick)
-	{
-		if( CurrentBrick.Location.X > 0 )
-		{
-			if( CurrentBrick.Location.Y > 0 )
-			{
-				BricksPP.AddItem(CurrentBrick);
-			}
-			else
-			{
-				BricksPN.AddItem(CurrentBrick);
-			}
-		}
-		else
-		{
-			if( CurrentBrick.Location.Y > 0 )
-			{
-				BricksNP.AddItem(CurrentBrick);
-			}
-			else
-			{
-				BricksNN.AddItem(CurrentBrick);
-			}
-		}
-	}
-}
 
 function Actor GetStaticMeshActorInstanceByTag(name actorTag)
 {
@@ -354,12 +263,10 @@ defaultproperties
 {
 	NumDrones = 30
 	OverallDroneSpeed = 100
-	NumBricks = 5000
+	NumBricks = 2000
 	DistanceBetweenBricks = 200
-	TimeToNextBrickSort = 0
 	bResetBricks = FALSE
 	NumBricksToResetPerTick = 100
-	
 
 	//MapPrefixes[1]='Tube_stairs_map_map'
 	HUDType=class'Drones.DronesHUDWrapper'

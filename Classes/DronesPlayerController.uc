@@ -12,17 +12,14 @@ var float LastOverallDroneSpeed;
 
 var bool bPause;
 
-var Actor Sphere;
+var int SphereOfInfluenceSize;
+//var Actor Sphere;
+
 //==========================EVENTS==========================================
 event simulated PostBeginPlay()
 {	
-/*
 	super.PostBeginPlay();
-	Sphere = Spawn(class'DronesSphereOfInfluence',,,Pawn.Location,Pawn.Rotation);
-	Sphere.SetBase(Pawn);
-	//Sphere.SetHardAttach(TRUE);
-	Sphere.SetPhysics(PHYS_Interpolating);
-*/
+	//SpawnSphereOfInfluence();
 }
 
 /** Inherited from parent class
@@ -40,9 +37,10 @@ event PlayerTick( float DeltaTime )
 	local DronesBrickSMActor ThisSMBrick;
 	local DronesBrickKActor ThisKBrick;
 	local array<DronesBrickKActor> OverlappedKBricks;
-	local int i;
 	
 	super.PlayerTick( DeltaTime );
+	
+//	Sphere.SetLocation(Pawn.Location);
 		
 	HUDWrapper = DronesHUDWrapper(myHUD);
 	
@@ -97,15 +95,16 @@ event PlayerTick( float DeltaTime )
 	LastTraceHit = traceHit;
 	} // end bpause
 
+
 	foreach OverlappingActors(class'DronesBrickSMActor', ThisSMBrick, 500, Pawn.Location, TRUE)
 	{
 //		ThisBrick.BrickParentShell.GainCollision();
 //		ThisBrick.SetPhysics(PHYS_RigidBody);
-		`Log("Overlapping SM Brick: " $ThisSMBrick$ " so going to destroy it and spawn a kbrick");
+//		`Log("Overlapping SM Brick: " $ThisSMBrick$ " so going to destroy it and spawn a kbrick");
 		ThisSMBrick.BrickParentShell.DestroySMBrickAndSpawnKBrick();	
 	}
 
-	foreach OverlappingActors(class'DronesBrickKActor', ThisKBrick, 500, Pawn.Location, TRUE)
+	foreach OverlappingActors(class'DronesBrickKActor', ThisKBrick, SphereOfInfluenceSize, Pawn.Location, TRUE)
 	{
 		OverlappedKBricks.AddItem(ThisKBrick);
 	}
@@ -120,6 +119,37 @@ event PlayerTick( float DeltaTime )
 
 }
 
+
+//==========================STATES==========================================
+state PlayerFlying
+{
+ignores SeePlayer, HearNoise, Bump;
+
+	function PlayerMove(float DeltaTime)
+	{
+		local vector X,Y,Z;
+
+		GetAxes(Rotation,X,Y,Z);
+
+		Pawn.Acceleration = PlayerInput.aForward*X + PlayerInput.aStrafe*Y + PlayerInput.aUp*vect(0,0,1);;
+		Pawn.Acceleration = Pawn.AccelRate * Normal(Pawn.Acceleration);
+
+		if ( Pawn.Acceleration == vect(0,0,0) )
+			Pawn.Velocity = vect(0,0,0);
+		// Update rotation.
+		UpdateRotation( DeltaTime );
+
+		if ( Role < ROLE_Authority ) // then save this move and replicate it
+			ReplicateMove(DeltaTime, Pawn.Acceleration, DCLICK_None, rot(0,0,0));
+		else
+			ProcessMove(DeltaTime, Pawn.Acceleration, DCLICK_None, rot(0,0,0));
+	}
+
+	event BeginState(Name PreviousStateName)
+	{
+		Pawn.SetPhysics(PHYS_Flying);
+	}
+}
 
  
 //==========================EXECS==========================================
@@ -262,6 +292,19 @@ exec function UnpauseDrones()
 		DroneController.PopState();
 	}
 }
+
+exec function FlyToggle()
+{
+	if( Pawn.Physics == PHYS_Flying )
+	{
+		GotoState('PlayerWalking');
+
+	}
+	else if( Pawn.Physics == PHYS_Walking )
+	{
+		GotoState('PlayerFlying');
+	}
+}
 /*
 exec function PrevWeapon()
 {
@@ -283,6 +326,17 @@ exec function NextWeapon()
 
 
 //==========================FUNCTIONS==========================================
+/*
+function SpawnSphereOfInfluence()
+{
+	Sphere = Spawn(class'DronesSphereOfInfluence',,,Pawn.Location,Pawn.Rotation);
+	Sphere.SetBase(Pawn);
+	Sphere.SetDrawScale(SphereOfInfluenceSize/160);
+	Sphere.SetHardAttach(TRUE);
+	Sphere.SetPhysics(PHYS_Interpolating);
+}
+*/
+
 function BuildPhantomStructure( DronesStructureBlueprint Blueprint )
 {	
 	local int i;
@@ -345,6 +399,7 @@ function UpdateRotation( float DeltaTime )
 //==========================DEFAULT PROPERTIES==========================================
 DefaultProperties
 {
+	SphereOfInfluenceSize=500
 	bPause=FALSE
 	LastTraceHit=None
 	LastTraceHitDrone=None

@@ -26,7 +26,7 @@ function SetBrickRelativeLocationsArray()
 	/*Not working as nice as I would like it too... 
 	*/
 
-		levels = RandRange(3,12);
+		levels = RandRange(3,8);
 		currentAdd = 0;
 
 		for(index = levels; index >= 0; index--){ //this should be counting down, so we build it from the bottom up...

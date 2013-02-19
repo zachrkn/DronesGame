@@ -27,7 +27,7 @@ function SetBrickRelativeLocationsArray()
 	currentAdd = 0;
 	levels = (int(RandRange(3,5)) * 2);
 
-	//Creaqte an Array with all the correspoing Random index... to build the maze
+	//Create an Array with all the correspoing Random index... to build the maze
 	for(index2 = 0; index2 < levels * 2; index2++){
 
 		for(index3 = 0; index3 < levels * 2; index3++){
@@ -64,11 +64,8 @@ function SetBrickRelativeLocationsArray()
 				BrickRelativeRotationsArray[currentAdd] = r;
 
 				currentAdd++;
-
 			}
-
 		}
-
 	}
 
 

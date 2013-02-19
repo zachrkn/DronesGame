@@ -55,7 +55,6 @@ event Tick(float DeltaTime)
 event RigidBodyCollision(PrimitiveComponent HitComponent, PrimitiveComponent OtherComponent, const out CollisionImpactData RigidCollisionData, int ContactIndex)
 {
 	super.RigidBodyCollision(HitComponent, OtherComponent, RigidCollisionData, ContactIndex);
-//	`Log("RBC! Brick: "$Self$" Location: "$Location$" OtherComponent: "$OtherComponent$ " OtherComponent.Owner: "$OtherComponent.Owner);
 //	`Log("RigidCollisionData.TotalNormalForceVector: " $RigidCollisionData.TotalNormalForceVector);
 //	`Log("RigidCollisionData.TotalFrictionForceVector: " $RigidCollisionData.TotalFrictionForceVector);
 /*	
@@ -136,7 +135,10 @@ DefaultProperties
 	
 	Begin Object Name=StaticMeshComponent0
         StaticMesh=DronesPackage.Meshes.Brick_large_mesh
-
+		CastShadow=TRUE
+		bCastDynamicShadow=TRUE
+		bUsePrecomputedShadows=FALSE
+		MaxDrawDistance=0
 		BlockRigidBody=TRUE
 		CollideActors=TRUE
 		BlockActors=TRUE
@@ -146,9 +148,9 @@ DefaultProperties
 		BlockNonZeroExtent=TRUE
 		RBChannel=RBCC_Untitled2
 		RBCollideWithChannels=(Default=TRUE, GameplayPhysics=FALSE, Untitled1=FALSE, Untitled2=TRUE)
-		MaxDrawDistance=0
+
 //		LightEnvironment=MyLightEnvironment
-		bUsePrecomputedShadows=FALSE
+
 		Materials[0]=MaterialInstanceConstant'DronesPackage.Materials.BrickMaterialInstanceConstant';
     End Object
 /*

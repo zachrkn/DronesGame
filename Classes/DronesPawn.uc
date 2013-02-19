@@ -37,11 +37,22 @@ event Touch(Actor Other, PrimitiveComponent OtherComp, Object.Vector HitLocation
 	`Log("Pawn Touched this: " $Other);
 }
 
+event Landed(vector HitNormal, Actor FloorActor)
+{
+/*
+	TakeFallingDamage();
+	if ( Health > 0 )
+		PlayLanded(Velocity.Z);
+	LastHitBy = None;
+*/
+}
+
 //==========================FUNCTIONS==========================================
 /** Inherited from parent class
  *	Update pawn rotation
  *	Called in the class DronesPlayerController in the function UpdateRotation
  *	This function is only called when the right mouse is not down */
+ /*
 simulated function FaceRotation(rotator NewRotation, float DeltaTime)
 {
 	local rotator RotationToFace;
@@ -53,10 +64,11 @@ simulated function FaceRotation(rotator NewRotation, float DeltaTime)
 	RotationToFace.Pitch = 0;
 	SetRotation(RotationToFace);
 }
-
+*/
 
 /** Inherited from parent class
  *	Calculates position and rotation for camera */
+/*
 simulated function bool CalcCamera( float fDeltaTime, out vector out_CamLoc, out rotator out_CamRot, out float out_FOV )
 {
 //	local vector CameraLocation;
@@ -75,10 +87,10 @@ simulated function bool CalcCamera( float fDeltaTime, out vector out_CamLoc, out
 		CurrentUnboundedRotation.Pitch -= 65536;
 	}
 
-	/* Because I'm bounding the rotation, I need to keep my own persistent record of what the rotation values are
-	 * I also need to just add the rotation difference each tick, because it's being bounded
-	 * FinalCameraRotation holds the persistent value, but for the sake of using variable names that make sense, I use BoundedRotation within this function when I'm bounding rotation
-	 * So, I need to assign the value of FinalCameraRotation (persistent) to BoundedRotation (local) */
+	//Because I'm bounding the rotation, I need to keep my own persistent record of what the rotation values are
+	// I also need to just add the rotation difference each tick, because it's being bounded
+	// FinalCameraRotation holds the persistent value, but for the sake of using variable names that make sense, I use BoundedRotation within this function when I'm bounding rotation
+	// So, I need to assign the value of FinalCameraRotation (persistent) to BoundedRotation (local) 
 	
 	// determine how much the the camera rotation has changed from the last tick.  CurrentUnboundedRotation and PreviousUnboundedRotation are unbounded
 	RotationDifference = CurrentUnboundedRotation - PreviousUnboundedRotation;
@@ -100,15 +112,6 @@ simulated function bool CalcCamera( float fDeltaTime, out vector out_CamLoc, out
 	// Output the final rotation value
 	FinalCameraRotation = BoundedRotation;
 	out_CamRot = FinalCameraRotation;
-
-/*
-	// Set the local CameraLocation to the pawn's location
-	CameraLocation = Location;
-	// offset the height of the CameraLocation so the camera isn't in the pawn's crotch
-	CameraLocation.Z += CamHeight;
-	// ??offset the Y axis of the CameraLocation so it's just in front of the pawn's face??
-	//CameraLocation.Y -= Controller.Rotation.Yaw * 25;
-*/
 	
 	CamStart = Location;
 	//CamStart.Z += CameraZOffset;
@@ -133,30 +136,17 @@ simulated function bool CalcCamera( float fDeltaTime, out vector out_CamLoc, out
 	//Output the final camera location value
 	out_CamLoc = FinalCameraLocation;
 
-	/*
+
 	//trace to check if cam running into wall/floor
-	if(Trace(HitLoc,HitNorm,out_CamLoc,Location,false,vect(12,12,12))!=none)
-	{
-		out_CamLoc = HitLoc + vecCamHeight;
-	}
-	*/
+//	if(Trace(HitLoc,HitNorm,out_CamLoc,Location,false,vect(12,12,12))!=none)
+//	{
+//		out_CamLoc = HitLoc + vecCamHeight;
+//	}
+
 
    return true;
-
-/*
-	local vector HitLoc,HitNorm, End, Start, vecCamHeight;
-
-	vecCamHeight = vect(0,0,0);
-	vecCamHeight.Z = CamHeight;
-	Start = Location;
-	End = (Location+vecCamHeight)-(Vector(Controller.Rotation) * CamOffsetDistance);  //cam follow behind player controller
-	out_CamLoc = End;
-	
-		//camera will look slightly above player
-   out_CamRot=rotator((Location + vecCamHeight) - out_CamLoc);
-*/
 }
-
+*/
 //==========================DEFAULT PROPERTIES==========================================
 defaultproperties
 {
